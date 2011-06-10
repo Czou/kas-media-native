@@ -1,0 +1,12 @@
+prefix=
+exec_prefix=
+libdir=${pcfiledir}
+includedir=/home/paris/eclipse_workspaces/workspace-2.0/tk-android-media/jni/ffmpeg-0.7-rc1
+
+Name: libavutil
+Description: FFmpeg utility library
+Version: 50.40.1
+Requires: 
+Conflicts:
+Libs: ${libdir}/libavutil.a -lm
+Cflags: -I${includedir}

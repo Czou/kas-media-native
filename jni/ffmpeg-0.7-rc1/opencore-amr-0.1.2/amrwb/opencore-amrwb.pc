@@ -1,0 +1,10 @@
+prefix=/home/paris/eclipse_workspaces/workspace-2.0/tk-android-media/jni/ffmpeg-0.7-rc1/opencore-amr-0.1.2/../opencore-amr_install
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include/opencore-amrwb
+
+Name: OpenCORE AMR-WB
+Description: Adaptive Multi-Rate Wideband speech codec library
+Version: 0.1.2
+Libs: -L${libdir} -lopencore-amrwb
+Cflags: -I${includedir}

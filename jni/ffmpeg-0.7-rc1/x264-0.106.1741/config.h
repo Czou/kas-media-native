@@ -1,0 +1,9 @@
+#define HAVE_MALLOC_H 1
+#define ARCH_ARM 1
+#define SYS_LINUX 1
+#define fseek fseeko
+#define ftell ftello
+#define BIT_DEPTH 8
+#define HAVE_GPL 1
+#define X264_VERSION ""
+#define X264_POINTVER "0.106.x"
