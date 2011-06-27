@@ -18,8 +18,8 @@ LOCAL_LDLIBS :=	-llog -L$(LOCAL_PATH)/ffmpeg-0.7-rc1/x264install/lib		\
 		-lc -lm -ldl -lgcc -lz -lx264 -lopencore-amrnb
 
 LOCAL_MODULE := android-media
-LOCAL_SRC_FILES :=	media/my-cmdutils.c media/init-media.c	\
-			media/tx/video-tx.c media/tx/audio-tx.c	\
+LOCAL_SRC_FILES :=	media/my-cmdutils.c media/init-media.c media/socket-manager.c	\
+			media/tx/video-tx.c media/tx/audio-tx.c		\
 			media/rx/sdp-manager.c media/rx/video-rx.c media/rx/audio-rx.c
 			
 

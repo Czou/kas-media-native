@@ -223,7 +223,7 @@ Java_com_tikal_android_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 	avcodec_close(pDecodecCtxVideo);
 
 	//Close the video file
-	av_close_input_file(pFormatCtx);
+	close_context(pFormatCtx);
 
 	return 0;
 }

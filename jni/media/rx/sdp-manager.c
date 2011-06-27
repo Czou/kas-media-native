@@ -75,7 +75,11 @@ static int my_sdp_read_header(AVFormatContext *s, AVFormatParameters *ap, const 
 				"", rtsp_st->sdp_port,
 				"?localport=%d&ttl=%d", rtsp_st->sdp_port,
 				rtsp_st->sdp_ttl);
-		if (ffurl_open(&rtsp_st->rtp_handle, url, AVIO_RDWR) < 0) {
+		
+		URLContext *urlContext = get_connection_by_local_port(rtsp_st->sdp_port);
+		if (urlContext)
+			rtsp_st->rtp_handle = urlContext;
+		else if (ffurl_open(&rtsp_st->rtp_handle, url, AVIO_RDWR) < 0) {
 			err = AVERROR_INVALIDDATA;
  			goto fail;
 		}
@@ -162,8 +166,7 @@ fail:
 int av_open_input_sdp(AVFormatContext **ic_ptr, const char *sdp_str, AVFormatParameters *ap)
 {
 	int err;
-	AVInputFormat *fmt;
-	AVIOContext *pb = NULL;
+	AVInputFormat *fmt = NULL;
 	void *logctx= ap && ap->prealloced_context ? *ic_ptr : NULL;
 	
 	fmt = av_find_input_format("sdp");

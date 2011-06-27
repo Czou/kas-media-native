@@ -262,11 +262,11 @@ Java_com_tikal_android_media_tx_MediaTx_initVideo(JNIEnv* env,
 			jobject thiz,
 			jstring outfile, jint width, jint height, jint frame_rate, jint bit_rate, jint codecId, jint payload_type, jstring presetFile)
 {
-	int ret;
-	int i;
-	
 	const char *pOutFile = NULL;
 	const char *pPresetFile = NULL;
+	URLContext *urlContext;
+	
+	int i, ret;
 	
 	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "Entro en initVideo");
 	
@@ -332,12 +332,12 @@ Java_com_tikal_android_media_tx_MediaTx_initVideo(JNIEnv* env,
 		return -3;
 	}
 	
-	dump_format(oc, 0, pOutFile, 1);
+	av_dump_format(oc, 0, pOutFile, 1);
 	
 	
 	
-	/* now that all the parameters are set, we can open the audio and
-	video codecs and allocate the necessary encode buffers */
+	/* now that all the parameters are set, we can open the
+	video codec and allocate the necessary encode buffers */
 	if (video_st) {
 		if((ret = open_video(oc, video_st)) < 0) {
 			__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Could not open video");
@@ -347,12 +347,28 @@ Java_com_tikal_android_media_tx_MediaTx_initVideo(JNIEnv* env,
 
 	/* open the output file, if needed */
 	if (!(fmt->flags & AVFMT_NOFILE)) {
-		if ((ret = url_fopen(&oc->pb, pOutFile, URL_WRONLY)) < 0) {
-			snprintf(buf, sizeof(buf), "Could not open '%s' AVERROR_NOENT:%d", pOutFile, AVERROR_NOENT);
+		if ((ret = avio_open(&oc->pb, pOutFile, URL_WRONLY)) < 0) {
+			snprintf(buf, sizeof(buf), "Could not open '%s'", pOutFile);
 			__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
 			return ret;
 		}
 	}
+	
+	//Free old URLContext
+	if( (ret=ffurl_close(oc->pb->opaque)) < 0) {
+		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Could not free URLContext");
+		return ret;
+	}
+	
+	urlContext = get_video_connection();
+	if ((ret = rtp_set_remote_url (urlContext, pOutFile)) < 0) {
+		snprintf(buf, sizeof(buf), "Could not open '%s' AVERROR_NOENT:%d", pOutFile, AVERROR_NOENT);
+		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
+		return ret;
+	}
+	
+	oc->pb->opaque = urlContext;
+	
 	
 	/* write the stream header, if any */
 	av_write_header(oc);
@@ -511,10 +527,9 @@ Java_com_tikal_android_media_tx_MediaTx_finishVideo (JNIEnv* env,
 		}
 		if (oc->pb && !(fmt->flags & AVFMT_NOFILE)) {
 			/* close the output file */
-			url_fclose(oc->pb);
+			avio_close(oc->pb);
 		}
-		/* free the stream */
-		av_free(oc);
+		close_context(oc);
 	}	
 	for (i=0;i<AVMEDIA_TYPE_NB;i++)
 		av_free(avcodec_opts[i]);

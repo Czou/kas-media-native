@@ -6,6 +6,7 @@
 
 #include <my-cmdutils.h>
 #include <init-media.h>
+#include <socket-manager.h>
 
 #include <jni.h>
 #include <android/log.h>
@@ -23,7 +24,7 @@
 */
 
 static char buf[256]; //Log
-static char* LOG_TAG = "NDK";
+static char* LOG_TAG = "NDK-audio-tx";
 
 static int sws_flags = SWS_BICUBIC;
 
@@ -112,10 +113,9 @@ Java_com_tikal_android_media_tx_MediaTx_initAudio (JNIEnv* env,
 						jobject thiz,
 						jstring outfile, jint codec_id, jint sample_rate, jint bit_rate, jint payload_type)
 {
-	int ret;
-	int i;
-	
 	const char *pOutFile = NULL;
+	URLContext *urlContext;
+	int i, ret;
 
 	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "Entro en initAudio");	
 	
@@ -157,7 +157,7 @@ Java_com_tikal_android_media_tx_MediaTx_initAudio (JNIEnv* env,
 	/* allocate the output media context */
 	oc = avformat_alloc_context();
 	if (!oc) {
-		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Memory error");
+		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Memory error: Could not alloc context");
 		return -2;
 	}
 	oc->oformat = fmt;
@@ -178,12 +178,12 @@ Java_com_tikal_android_media_tx_MediaTx_initAudio (JNIEnv* env,
 		return -3;
 	}
 	
-	dump_format(oc, 0, pOutFile, 1);
+	av_dump_format(oc, 0, pOutFile, 1);
 	
 	
 	
-	/* now that all the parameters are set, we can open the audio and
-	video codecs and allocate the necessary encode buffers */
+	/* now that all the parameters are set, we can open the
+	audio codec and allocate the necessary encode buffers */
 	if (audio_st) {
 		if((ret = open_audio(oc, audio_st)) < 0) {
 			__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Could not open audio");
@@ -193,12 +193,28 @@ Java_com_tikal_android_media_tx_MediaTx_initAudio (JNIEnv* env,
 	
 	/* open the output file, if needed */
 	if (!(fmt->flags & AVFMT_NOFILE)) {
-		if ((ret = url_fopen(&oc->pb, pOutFile, URL_WRONLY)) < 0) {
+		if ((ret = avio_open(&oc->pb, pOutFile, URL_WRONLY)) < 0) {
 			snprintf(buf, sizeof(buf), "Could not open '%s' AVERROR_NOENT:%d", pOutFile, AVERROR_NOENT);
 			__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
 			return ret;
 		}
 	}
+	
+	//Free old URLContext
+	if( (ret=ffurl_close(oc->pb->opaque)) < 0) {
+		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Could not free URLContext");
+		return ret;
+	}
+	
+	urlContext = get_audio_connection();
+	if ((ret = rtp_set_remote_url (urlContext, pOutFile)) < 0) {
+		snprintf(buf, sizeof(buf), "Could not open '%s'", pOutFile);
+		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
+		return ret;
+	}
+	
+	oc->pb->opaque = urlContext;
+	
 	
 	/* write the stream header, if any */
 	av_write_header(oc);
@@ -313,10 +329,9 @@ Java_com_tikal_android_media_tx_MediaTx_finishAudio (JNIEnv* env,
 		}
 		if (oc->pb && !(fmt->flags & AVFMT_NOFILE)) {
 			/* close the output file */
-			url_fclose(oc->pb);
+			avio_close(oc->pb);
 		}
-		/* free the stream */
-		av_free(oc);
+		close_context(oc);
 	}
 	
 	for (i=0;i<AVMEDIA_TYPE_NB;i++)
