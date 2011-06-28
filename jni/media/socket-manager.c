@@ -82,6 +82,12 @@ static void
 free_connection(URLContext *urlContext)
 {
 	pthread_mutex_lock(&mutex);
+	
+snprintf(buf, sizeof(buf), "before nAudio: %d", nAudio);
+__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
+snprintf(buf, sizeof(buf), "before nVideo: %d", nVideo);
+__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
+
 	if(pAudioFormatCtx && pAudioFormatCtx->pb && (urlContext==pAudioFormatCtx->pb->opaque) && (--nAudio==0)) {
 		av_free(pAudioFormatCtx);
 		pAudioFormatCtx = NULL;
@@ -91,6 +97,12 @@ free_connection(URLContext *urlContext)
 		pVideoFormatCtx = NULL;
 	}
 	urlContext = NULL;
+	
+snprintf(buf, sizeof(buf), "after nAudio: %d", nAudio);
+__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
+snprintf(buf, sizeof(buf), "after nVideo: %d", nVideo);
+__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
+
 	pthread_mutex_unlock(&mutex);
 }
 
@@ -102,18 +114,28 @@ close_context(AVFormatContext *s)
 	RTSPStream *rtsp_st;
 	int i;
 	
+	if (!s)
+		return;
+	
 	//if is output
-	if (s->oformat) {
+	if (s->oformat && s->pb) {
+		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "free output");
 		free_connection(s->pb->opaque);
+		s->pb->opaque = NULL;
+		if (!(s->oformat->flags & AVFMT_NOFILE)) {
+			avio_close(s->pb);
+		}
 		av_free(s);
 	}
 	
 	//if is input
-	if (s->iformat) {
+	if (s->iformat && s->priv_data) {
 		rt = s->priv_data;
 		for (i = 0; i < rt->nb_rtsp_streams; i++) {
 			rtsp_st = rt->rtsp_streams[i];
+			__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "free input");
 			free_connection( rtsp_st->rtp_handle );
+			rtsp_st->rtp_handle = NULL;
 		}
 		av_close_input_file(s);	
 	}
@@ -137,11 +159,6 @@ get_connection_by_local_port(int local_port)
 }
 
 
-
-
-
-
-
 //AUDIO
 
 URLContext*
@@ -157,7 +174,13 @@ Java_com_tikal_android_media_MediaPortManager_takeAudioLocalPort (JNIEnv* env, j
 	return rtp_get_local_rtp_port(urlContext);
 }
 
-
+void
+Java_com_tikal_android_media_MediaPortManager_releaseAudioLocalPort (JNIEnv* env, jobject thiz)
+{
+	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "releaseAudioLocalPort");
+	if (pAudioFormatCtx && pAudioFormatCtx->pb)
+		free_connection(pAudioFormatCtx->pb->opaque);
+}
 
 
 //VIDEO
@@ -175,4 +198,11 @@ Java_com_tikal_android_media_MediaPortManager_takeVideoLocalPort (JNIEnv* env, j
 	return rtp_get_local_rtp_port(urlContext);
 }
 
+void
+Java_com_tikal_android_media_MediaPortManager_releaseVideoLocalPort (JNIEnv* env, jobject thiz)
+{
+	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "releaseVideoLocalPort");
+	if (pVideoFormatCtx && pVideoFormatCtx->pb)
+		free_connection(pVideoFormatCtx->pb->opaque);
+}
 

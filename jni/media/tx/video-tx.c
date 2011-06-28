@@ -22,7 +22,7 @@
 */
 
 static char buf[256]; //Log
-static char* LOG_TAG = "NDK";
+static char* LOG_TAG = "NDK-video-tx";
 
 
 static int sws_flags = SWS_BICUBIC;
@@ -280,13 +280,13 @@ Java_com_tikal_android_media_tx_MediaTx_initVideo(JNIEnv* env,
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Couldn't init media");
 		return ret;
 	}
-	
+/*	
 	for(i=0; i<AVMEDIA_TYPE_NB; i++){
 		avcodec_opts[i]= avcodec_alloc_context2(i);
 	}
 	avformat_opts = avformat_alloc_context();
 	sws_opts = sws_getContext(16,16,0, 16,16,0, sws_flags, NULL,NULL,NULL);
-	
++/	
 	/* auto detect the output format from the name. default is mp4. */
 	fmt = av_guess_format(NULL, pOutFile, NULL);
 	if (!fmt) {
@@ -510,6 +510,7 @@ jint
 Java_com_tikal_android_media_tx_MediaTx_finishVideo (JNIEnv* env,
 						jobject thiz)
 {
+__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "finishVideo");
 	int i;
 	/* write the trailer, if any.  the trailer must be written
 	* before you close the CodecContexts open when you wrote the
@@ -525,16 +526,20 @@ Java_com_tikal_android_media_tx_MediaTx_finishVideo (JNIEnv* env,
 			av_freep(&oc->streams[i]->codec);
 			av_freep(&oc->streams[i]);
 		}
-		if (oc->pb && !(fmt->flags & AVFMT_NOFILE)) {
-			/* close the output file */
-			avio_close(oc->pb);
-		}
+		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Close the context...");
 		close_context(oc);
-	}	
-	for (i=0;i<AVMEDIA_TYPE_NB;i++)
+		oc = NULL;
+		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "ok");
+	}
+__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "533");		
+/*	for (i=0;i<AVMEDIA_TYPE_NB;i++)
 		av_free(avcodec_opts[i]);
+__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "536");	
 	av_free(avformat_opts);
-	av_free(sws_opts);	
+__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "538");	
+	av_free(sws_opts);
+*/
+__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "return...");	
 	return 0;
 }
 

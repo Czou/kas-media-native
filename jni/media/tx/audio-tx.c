@@ -127,13 +127,13 @@ Java_com_tikal_android_media_tx_MediaTx_initAudio (JNIEnv* env,
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Couldn't init media");
 		return ret;
 	}
-	
+/*	
 	for(i=0; i<AVMEDIA_TYPE_NB; i++){
 		avcodec_opts[i]= avcodec_alloc_context2(i);
 	}
 	avformat_opts = avformat_alloc_context();
 	sws_opts = sws_getContext(16,16,0, 16,16,0, sws_flags, NULL,NULL,NULL);
-	
++/	
 	/* auto detect the output format from the name. default is mp4. */
 	fmt = av_guess_format(NULL, pOutFile, NULL);
 	if (!fmt) {
@@ -308,8 +308,9 @@ static void close_audio(AVFormatContext *oc, AVStream *st)
 
 jint
 Java_com_tikal_android_media_tx_MediaTx_finishAudio (JNIEnv* env,
-					jobject thiz)
+						jobject thiz)
 {
+__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "finishAudio");
 	int i;
 	/* write the trailer, if any.  the trailer must be written
 	* before you close the CodecContexts open when you wrote the
@@ -317,28 +318,28 @@ Java_com_tikal_android_media_tx_MediaTx_finishAudio (JNIEnv* env,
 	* was freed on av_codec_close() */
 	if(oc) {
 		av_write_trailer(oc);
-		
 		/* close codec */
 		if (audio_st)
 			close_audio(oc, audio_st);
-	
 		/* free the streams */
 		for(i = 0; i < oc->nb_streams; i++) {
 			av_freep(&oc->streams[i]->codec);
 			av_freep(&oc->streams[i]);
 		}
-		if (oc->pb && !(fmt->flags & AVFMT_NOFILE)) {
-			/* close the output file */
-			avio_close(oc->pb);
-		}
+		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Close the context...");
 		close_context(oc);
+		oc = NULL;
+		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "ok");
 	}
-	
-	for (i=0;i<AVMEDIA_TYPE_NB;i++)
+__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "333");	
+/*	for (i=0;i<AVMEDIA_TYPE_NB;i++)
 		av_free(avcodec_opts[i]);
+__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "336");	
 	av_free(avformat_opts);
+__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "338");	
 	av_free(sws_opts);
-	
+*/
+__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "return...");
 	return 0;
 }
 

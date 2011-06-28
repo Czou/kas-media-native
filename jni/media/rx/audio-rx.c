@@ -10,6 +10,7 @@
 #include <android/log.h>
 
 #include "libavformat/avformat.h"
+#include <pthread.h>
 
 
 static char buf[256]; //Log
@@ -19,7 +20,8 @@ enum {
 	DATA_SIZE = (AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2,
 };
 
-static int isReceiving = 0;
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+static int isReceiving;
 
 
 
@@ -28,7 +30,9 @@ Java_com_tikal_android_media_rx_MediaRx_stopAudioRx(JNIEnv* env,
 				jobject thiz)
 {
 	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "Stop audio");
+	pthread_mutex_lock(&mutex);
 	isReceiving = 0;
+	pthread_mutex_unlock(&mutex);
 	return 0;
 }
 
@@ -44,7 +48,7 @@ Java_com_tikal_android_media_rx_MediaRx_startAudioRx(JNIEnv* env, jobject thiz,
 	AVCodecContext *pDecodecCtxAudio, *pDecodecCtxAudioAux;
 	AVCodec *pDecodecAudio;
 
-	int i, audioStream, outbuf_size, out_size, len, ret;
+	int i, audioStream, outbuf_size, out_size, len, ret, receive;
 
 	AVPacket packet;
 	
@@ -161,10 +165,16 @@ Java_com_tikal_android_media_rx_MediaRx_startAudioRx(JNIEnv* env, jobject thiz,
 	//READING THE DATA
 	out_size = 0;
 	i = 0;
+	
+	pthread_mutex_lock(&mutex);
 	isReceiving = 1;
+	receive = 1;
+	pthread_mutex_unlock(&mutex);
+	
 	outbuf = malloc(DATA_SIZE);
 	int outbuf_init = outbuf;
 	while (av_read_frame(pFormatCtx, &packet) >= 0) {
+//__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "177");
 		//Is this a packet from the audio stream?
 		if (packet.stream_index == audioStream) {
 //			__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "audioStream");
@@ -183,8 +193,7 @@ Java_com_tikal_android_media_rx_MediaRx_startAudioRx(JNIEnv* env, jobject thiz,
 				//FIXME check outbuf has suficient space
 				if (outbuf_size < (DATA_SIZE - out_size)) {
 					memcpy(outbuf, outbuftemp, outbuf_size);
-				}
-				
+				}				
 //				(*env)->SetByteArrayRegion(env, out_buffer_audio, 0, outbuf_size, (jbyte *) outbuf);
 //				(*env)->CallVoidMethod(env, audioPlayer, midAudio, out_buffer_audio, outbuf_size);
 				
@@ -199,7 +208,7 @@ Java_com_tikal_android_media_rx_MediaRx_startAudioRx(JNIEnv* env, jobject thiz,
 					(*env)->CallVoidMethod(env, audioPlayer, midAudio, out_buffer_audio, out_size);
 //					__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "186");
 					out_size = 0;
-//					i = 0;
+					i = 0;
 					outbuf = outbuf_init;
 //					__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "190");
 				}
@@ -208,21 +217,24 @@ Java_com_tikal_android_media_rx_MediaRx_startAudioRx(JNIEnv* env, jobject thiz,
 		}
 		//Free the packet that was allocated by av_read_frame
 		av_free_packet(&packet);
-		if (isReceiving == 0)
+		pthread_mutex_lock(&mutex);
+		receive = isReceiving;
+		pthread_mutex_unlock(&mutex);
+		if (receive == 0)
 			break;
+//__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "---");
 	}
+	
 	free(outbuf);
-	
- free:
 	(*env)->ReleaseStringUTFChars(env, sdp_str, pSdpString);
-	
 	//Close the codec
 	avcodec_close(pDecodecCtxAudio);
 	
 	//Close the audio file
+	__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Close the context...");
 	close_context(pFormatCtx);
+	__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "ok");
 
 	return 0;
 }
-
 

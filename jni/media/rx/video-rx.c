@@ -15,7 +15,7 @@
 
 
 static char buf[256]; //Log
-static char* LOG_TAG = "NDK";
+static char* LOG_TAG = "NDK-video-rx";
 
 static int isReceiving = 0;
 static int sws_flags = SWS_BICUBIC;
@@ -223,9 +223,10 @@ Java_com_tikal_android_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 	avcodec_close(pDecodecCtxVideo);
 
 	//Close the video file
+	__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Close the context...");
 	close_context(pFormatCtx);
+	__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "ok");
 
 	return 0;
 }
-
 
