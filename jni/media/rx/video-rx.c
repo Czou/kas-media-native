@@ -43,23 +43,17 @@ Java_com_tikal_android_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 	AVCodecContext *pDecodecCtxVideo;
 	AVCodec *pDecodecVideo;
 	AVFrame *pFrame, *pFrameRGB;
-
-	int i, audioStream, videoStream;
-
-	uint8_t *buffer;
-	int numBytes;
-
-	int frameFinished;
-
-	int w, h;
-
-	AVPacket packet;
-
-	static struct SwsContext *img_convert_ctx;
-
-	int ret;
+	
+	AVPacket avpkt;
+	uint8_t *avpkt_data_init;
 	
 	jintArray out_buffer_video;
+	uint8_t *buffer;
+	
+	int i, ret, audioStream, videoStream, numBytes, len, got_picture;
+	
+	struct SwsContext *img_convert_ctx;
+	
 	
 
 	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "Entro en startVideoRx");
@@ -94,10 +88,6 @@ Java_com_tikal_android_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 		return -3;
 	}
 	
-
-	snprintf(buf, sizeof(buf), "nb_streams: %d", pFormatCtx->nb_streams);
-	__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
-	
 	// Find the first video stream
 	videoStream = -1;
 	for (i = 0; i < pFormatCtx->nb_streams; i++)
@@ -121,7 +111,6 @@ Java_com_tikal_android_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Unsupported codec!");
 		return -5; // Codec not found
 	}
-	
 	
 	// Open video codec
 	if (avcodec_open(pDecodecCtxVideo, pDecodecVideo) < 0)
@@ -172,39 +161,56 @@ Java_com_tikal_android_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 	
 	
 	//READING THE DATA
-	i = 0;
 	isReceiving = 1;
-	while (av_read_frame(pFormatCtx, &packet) >= 0) {
-		//Is this a packet from the video stream?
-		if (packet.stream_index == videoStream) {
-			//Decode video frame
-			avcodec_decode_video(pDecodecCtxVideo, pFrame, &frameFinished, packet.data, packet.size);
-			//Did we get a video frame?
-			if (frameFinished) {
-				//Convert the image from its native format to RGB
-				img_convert_ctx = sws_getContext(pDecodecCtxVideo->width,
-						pDecodecCtxVideo->height, pDecodecCtxVideo->pix_fmt,
-						pDecodecCtxVideo->width, pDecodecCtxVideo->height, PIX_FMT_RGB32,
-						sws_flags, NULL, NULL, NULL);
+	while (av_read_frame(pFormatCtx, &avpkt) >= 0) {
+		avpkt_data_init = avpkt.data;
+		//Is this a avpkt from the video stream?
+		if (avpkt.stream_index == videoStream) {
+/*
+snprintf(buf, sizeof(buf), "avpkt->pts: %d", avpkt.pts);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+snprintf(buf, sizeof(buf), "avpkt->dts: %d", avpkt.dts);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+/*snprintf(buf, sizeof(buf), "avpkt->size: %d", avpkt.size);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+*/
+			while (avpkt.size > 0) {
+				//Decode video frame
+				len = avcodec_decode_video2(pDecodecCtxVideo, pFrame, &got_picture, &avpkt);
+				if (len < 0) {
+					__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Error in video decoding.");
+					break;
+				}
+				//Did we get a video frame?
+				if (got_picture) {
+					//Convert the image from its native format to RGB
+					img_convert_ctx = sws_getContext(pDecodecCtxVideo->width,
+							pDecodecCtxVideo->height, pDecodecCtxVideo->pix_fmt,
+							pDecodecCtxVideo->width, pDecodecCtxVideo->height, PIX_FMT_RGB32,
+							sws_flags, NULL, NULL, NULL);
 
-				if (img_convert_ctx == NULL)
-					return -8;
+					if (img_convert_ctx == NULL)
+						return -8;
 
-				sws_scale(img_convert_ctx, pFrame->data, pFrame->linesize, 0,
-						pDecodecCtxVideo->height, ((AVPicture*) pFrameRGB)->data,
-						((AVPicture*) pFrameRGB)->linesize);
+					sws_scale(img_convert_ctx, pFrame->data, pFrame->linesize, 0,
+							pDecodecCtxVideo->height, ((AVPicture*) pFrameRGB)->data,
+							((AVPicture*) pFrameRGB)->linesize);
 
-				(*env)->SetByteArrayRegion(env, out_buffer_video, 0,
-						(pDecodecCtxVideo->width * 4 * pDecodecCtxVideo->height),
-						(jint *) pFrameRGB->data[0]);
+					(*env)->SetByteArrayRegion(env, out_buffer_video, 0,
+							(pDecodecCtxVideo->width * 4 * pDecodecCtxVideo->height),
+							(jint *) pFrameRGB->data[0]);
 
-				(*env)->CallVoidMethod(env, videoPlayer, midVideo, out_buffer_video,
-						pDecodecCtxVideo->width, pDecodecCtxVideo->height);
+					(*env)->CallVoidMethod(env, videoPlayer, midVideo, out_buffer_video,
+							pDecodecCtxVideo->width, pDecodecCtxVideo->height);
+				}
+				avpkt.size -= len;
+				avpkt.data += len;
 			}
 		}
 
 		//Free the packet that was allocated by av_read_frame
-		av_free_packet(&packet);
+		avpkt.data = avpkt_data_init;
+		av_free_packet(&avpkt);
 		if (isReceiving == 0)
 			break;
 	}
