@@ -20,11 +20,32 @@ static int initialized = 0;
 static void
 android_av_log(void *ptr, int level, const char *fmt, va_list vargs)
 {
-	int android_log = ANDROID_LOG_DEBUG;
+	int android_log = ANDROID_LOG_UNKNOWN;
 	switch(level){
+	case AV_LOG_QUIET:
+		android_log = ANDROID_LOG_INFO;
+		break;
+	case AV_LOG_PANIC:
+		android_log = ANDROID_LOG_ERROR;
+		break;
+	case AV_LOG_FATAL:
+		android_log = ANDROID_LOG_FATAL;
+		break;
 	case AV_LOG_ERROR:
-			android_log = ANDROID_LOG_ERROR;
-			break;	
+		android_log = ANDROID_LOG_ERROR;
+		break;
+	case AV_LOG_WARNING:
+		android_log = ANDROID_LOG_WARN;
+		break;
+	case AV_LOG_INFO:
+		android_log = ANDROID_LOG_INFO;
+		break;
+	case AV_LOG_VERBOSE:
+		android_log = ANDROID_LOG_VERBOSE;
+		break;
+	case AV_LOG_DEBUG:
+		android_log = ANDROID_LOG_DEBUG;
+		break;
 	}
 	vsnprintf(buf, sizeof(buf), fmt, vargs);
 	__android_log_write(android_log, "av_log", buf);
