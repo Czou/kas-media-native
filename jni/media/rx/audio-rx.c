@@ -45,17 +45,17 @@ Java_com_tikal_android_media_rx_MediaRx_startAudioRx(JNIEnv* env, jobject thiz,
 	const char *pSdpString = NULL;
 
 	AVFormatContext *pFormatCtx;
-	AVCodecContext *pDecodecCtxAudio, *pDecodecCtxAudioAux;
+	AVCodecContext *pDecodecCtxAudio;
 	AVCodec *pDecodecAudio;
-
-	int i, audioStream, outbuf_size, out_size, len, ret, receive;
-
-	AVPacket packet;
+	
+	AVPacket avpkt;
+	uint8_t *avpkt_data_init;
 	
 	jintArray out_buffer_audio;
-	static *outbuf, outbuftemp[DATA_SIZE];
-	
+	uint8_t outbuf[DATA_SIZE];
 
+	int i, audioStream, out_size, len, ret, receive;
+	
 	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "Entro en startAudioRx");
 
 	pSdpString = (*env)->GetStringUTFChars(env, sdp_str, NULL);
@@ -91,8 +91,6 @@ Java_com_tikal_android_media_rx_MediaRx_startAudioRx(JNIEnv* env, jobject thiz,
 	// Find the first audio stream
 	audioStream = -1;
 	for (i = 0; i < pFormatCtx->nb_streams; i++) {
-		snprintf(buf, sizeof(buf), "i: %d", i);
-		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 		if (pFormatCtx->streams[i]->codec->codec_type == CODEC_TYPE_AUDIO) {
 			audioStream = i;
 			break;
@@ -102,52 +100,44 @@ Java_com_tikal_android_media_rx_MediaRx_startAudioRx(JNIEnv* env, jobject thiz,
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Didn't find a audio stream");
 		return -4;
 	}
-	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "Get a pointer to the codec context for the audio stream");
-	// Get a pointer to the codec context for the audio stream
-	pDecodecCtxAudioAux = pFormatCtx->streams[audioStream]->codec;
 	
-	snprintf(buf, sizeof(buf), "pDecodecCtxAudioAux->id: %d", pDecodecCtxAudioAux->codec_id);
-	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
-	snprintf(buf, sizeof(buf), "CODEC_ID_AMR_NB: %d", CODEC_ID_AMR_NB);
-	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+	// Get a pointer to the codec context for the audio stream
+	pDecodecCtxAudio = pFormatCtx->streams[audioStream]->codec;
 	
 	
 	
 
 	// Find the decoder for the video stream
-	if(pDecodecCtxAudioAux->codec_id == CODEC_ID_AMR_NB) {
-		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "AMR-NB");
+	if(pDecodecCtxAudio->codec_id == CODEC_ID_AMR_NB) {
 		pDecodecAudio = avcodec_find_decoder_by_name("libopencore_amrnb");
-		//pDecodecCtxAudio = avcodec_alloc_context();
-		pDecodecCtxAudio = pDecodecCtxAudioAux;
 	}
 	else {
-		pDecodecAudio = avcodec_find_decoder(pDecodecCtxAudioAux->codec_id);
-		pDecodecCtxAudio = pDecodecCtxAudioAux;
+		pDecodecAudio = avcodec_find_decoder(pDecodecCtxAudio->codec_id);
 	}
 		
 	
 	if (pDecodecAudio == NULL) {
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Unsupported audio codec!");
-		return -5; // Codec not found
+		return -5;
 	}
 	
+snprintf(buf, sizeof(buf), "pDecodecAudio->name: %s", pDecodecAudio->name);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 	
 	
 	// Open audio codec
 	if (avcodec_open(pDecodecCtxAudio, pDecodecAudio) < 0)
 		return -6; // Could not open codec
 	
-	snprintf(buf, sizeof(buf), "pDecodecCtxAudio->id: %d", pDecodecCtxAudio->codec_id);
-	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+snprintf(
+	buf,
+	sizeof(buf),
+	"c->sample_rate: %d; c->Frame Size: %d; c->bit_rate: %d; c->FMT: %d; FMT S16 : %d ",
+	pDecodecCtxAudio->sample_rate, pDecodecCtxAudio->frame_size,
+	pDecodecCtxAudio->bit_rate, pDecodecCtxAudio->sample_fmt,
+	SAMPLE_FMT_S16);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 	
-			snprintf(
-					buf,
-					sizeof(buf),
-					"c->sample_rate: %d; c->Frame Size: %d c->FMT: %d FMT S16 : %d ",
-					pDecodecCtxAudio->sample_rate, pDecodecCtxAudio->frame_size, pDecodecCtxAudio->sample_fmt,
-					SAMPLE_FMT_S16);
-			__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 	
 	
 	//Prepare Call to Method Java.
@@ -163,66 +153,48 @@ Java_com_tikal_android_media_rx_MediaRx_startAudioRx(JNIEnv* env, jobject thiz,
 	out_buffer_audio = (jbyteArray)(*env)->NewByteArray(env, DATA_SIZE);
 	
 	//READING THE DATA
-	out_size = 0;
-	i = 0;
-	
 	pthread_mutex_lock(&mutex);
 	isReceiving = 1;
 	receive = 1;
 	pthread_mutex_unlock(&mutex);
 	
-	outbuf = malloc(DATA_SIZE);
-	int outbuf_init = outbuf;
-	while (av_read_frame(pFormatCtx, &packet) >= 0) {
-//__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "177");
-		//Is this a packet from the audio stream?
-		if (packet.stream_index == audioStream) {
-//			__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "audioStream");
-			//Decode audio frame
-			outbuf_size = DATA_SIZE;
-			len = avcodec_decode_audio3(pDecodecCtxAudio, (int16_t *) outbuftemp, &outbuf_size, &packet);
-//			len = avcodec_decode_audio3(pDecodecCtxAudio, (int16_t *) outbuf, &outbuf_size, &packet);
-//			snprintf(buf, sizeof(buf), "outbuf_size: %d", outbuf_size);
-//			__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
-			if (len >= 0) {
-//				out_buffer_audio = (jbyteArray)(*env)->NewByteArray(env, outbuf_size);
-//				(*env)->SetByteArrayRegion(env, out_buffer_audio, 0, outbuf_size, (jbyte *) outbuftemp);//outbuf);
-//				(*env)->CallVoidMethod(env, audioPlayer, midAudio, out_buffer_audio, outbuf_size);
-//				(*env)->ReleaseByteArrayElements(env, out_buffer_audio, 0, outbuf_size, pSdpString);
-//				memmove(outbuf, outbuftemp, outbuf_size);
-				//FIXME check outbuf has suficient space
-				if (outbuf_size < (DATA_SIZE - out_size)) {
-					memcpy(outbuf, outbuftemp, outbuf_size);
-				}				
-//				(*env)->SetByteArrayRegion(env, out_buffer_audio, 0, outbuf_size, (jbyte *) outbuf);
-//				(*env)->CallVoidMethod(env, audioPlayer, midAudio, out_buffer_audio, outbuf_size);
-				
-				outbuf += outbuf_size;
-				out_size += outbuf_size;
-//				i++;
-//				__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "181");
-				if(out_size > 1000) {
-//					__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "183");
-					(*env)->SetByteArrayRegion(env, out_buffer_audio, 0, out_size, (jbyte *) outbuf_init);
-//					__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "185");
-					(*env)->CallVoidMethod(env, audioPlayer, midAudio, out_buffer_audio, out_size);
-//					__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "186");
-					out_size = 0;
-					i = 0;
-					outbuf = outbuf_init;
-//					__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "190");
+	while (av_read_frame(pFormatCtx, &avpkt) >= 0) {
+		avpkt_data_init = avpkt.data;
+		//Is this a avpkt from the audio stream?
+		if (avpkt.stream_index == audioStream) {
+/*
+snprintf(buf, sizeof(buf), "avpkt->pts: %d", avpkt.pts);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+snprintf(buf, sizeof(buf), "avpkt->dts: %d", avpkt.dts);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+snprintf(buf, sizeof(buf), "avpkt->size: %d", avpkt.size);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+*/
+			while (avpkt.size > 0) {
+				//Decode audio frame
+				out_size = DATA_SIZE;
+				len = avcodec_decode_audio3(pDecodecCtxAudio, (int16_t *) outbuf, &out_size, &avpkt);
+				if (len < 0) {
+					__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Error in audio decoding.");
+					break;
 				}
-
+				if (out_size > 0) {
+					(*env)->SetByteArrayRegion(env, out_buffer_audio, 0, out_size, (jbyte *) outbuf);
+					(*env)->CallVoidMethod(env, audioPlayer, midAudio, out_buffer_audio, out_size);
+				}
+				avpkt.size -= len;
+				avpkt.data += len;
 			}
 		}
+		
 		//Free the packet that was allocated by av_read_frame
-		av_free_packet(&packet);
+		avpkt.data = avpkt_data_init;
+		av_free_packet(&avpkt);
 		pthread_mutex_lock(&mutex);
 		receive = isReceiving;
 		pthread_mutex_unlock(&mutex);
 		if (receive == 0)
 			break;
-//__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "---");
 	}
 	
 	free(outbuf);
