@@ -149,11 +149,15 @@ get_connection_by_local_port(int local_port)
 	
 	pthread_mutex_lock(&mutex);
 	
-	if (pVideoFormatCtx &&(rtp_get_local_rtp_port(pVideoFormatCtx->pb->opaque) == local_port) )
+	if (pVideoFormatCtx &&(rtp_get_local_rtp_port(pVideoFormatCtx->pb->opaque) == local_port) ) {
 		urlContext = pVideoFormatCtx->pb->opaque;
-	else if (pAudioFormatCtx && (rtp_get_local_rtp_port(pAudioFormatCtx->pb->opaque) == local_port) )
+		nVideo++;
+	}
+	else if (pAudioFormatCtx && (rtp_get_local_rtp_port(pAudioFormatCtx->pb->opaque) == local_port) ) {
 		urlContext = pAudioFormatCtx->pb->opaque;
-		
+		nAudio++;
+	}
+	
 	pthread_mutex_unlock(&mutex);
 	return urlContext;
 }
@@ -170,6 +174,7 @@ get_audio_connection()
 jint
 Java_com_tikal_android_media_MediaPortManager_takeAudioLocalPort (JNIEnv* env, jobject thiz)
 {
+	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "takeAudioLocalPort");
 	URLContext *urlContext = get_audio_connection();
 	return rtp_get_local_rtp_port(urlContext);
 }
@@ -194,6 +199,7 @@ get_video_connection()
 jint
 Java_com_tikal_android_media_MediaPortManager_takeVideoLocalPort (JNIEnv* env, jobject thiz)
 {
+	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "takeVideoLocalPort");
 	URLContext *urlContext = get_video_connection();
 	return rtp_get_local_rtp_port(urlContext);
 }
