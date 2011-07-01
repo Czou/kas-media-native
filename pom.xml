@@ -1,0 +1,47 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.tikal.android</groupId>
+  <artifactId>tk-android-media</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <packaging>apklib</packaging>
+  <name>AndroidMedia</name>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.google.android</groupId>
+      <artifactId>android</artifactId>
+      <version>2.3.1</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>${project.artifactId}</finalName>
+    <sourceDirectory>src</sourceDirectory>
+    <plugins>
+
+      <plugin>
+         <artifactId>maven-compiler-plugin</artifactId>
+         <version>2.3</version>
+      </plugin>
+
+      <plugin>
+        <groupId>com.jayway.maven.plugins.android.generation2</groupId>
+        <artifactId>maven-android-plugin</artifactId>
+        <version>3.0.0-SNAPSHOT</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>ndk-build</goal>
+            </goals>
+            <configuration>
+              <clearNativeArtifacts>false</clearNativeArtifacts>
+              <attachNativeArtifacts>true</attachNativeArtifacts>
+            </configuration>
+          </execution>
+        </executions>
+      <extensions>true</extensions>
+      </plugin>
+    </plugins>
+  </build>
+</project>
