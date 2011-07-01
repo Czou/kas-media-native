@@ -4,7 +4,10 @@
   <artifactId>tk-android-media</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <packaging>apklib</packaging>
-  <name>AndroidMedia</name>
+
+  <name>TODO: Add a proper name here</name>
+  <description>TODO: Add a proper description here</description>
+  <url>http://maven.apache.org</url>
 
   <dependencies>
     <dependency>
@@ -44,4 +47,11 @@
       </plugin>
     </plugins>
   </build>
+
+  <distributionManagement>
+    <site>
+      <id>maven-site</id>
+      <url>scp://193.147.51.37/var/www/site/tk-android-mediaspec/</url>
+    </site>
+  </distributionManagement>
 </project>
