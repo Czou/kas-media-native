@@ -51,7 +51,7 @@
   <distributionManagement>
     <site>
       <id>maven-site</id>
-      <url>scp://193.147.51.37/var/www/site/tk-android-media/</url>
+      <url>scp://193.147.51.37/var/www/site/tk-android-media/${project.version}</url>
     </site>
   </distributionManagement>
 </project>
