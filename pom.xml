@@ -1,60 +1,86 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>com.tikal.android</groupId>
-  <artifactId>tk-android-media</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
-  <packaging>apklib</packaging>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>com.tikal.android</groupId>
+	<artifactId>tk-android-media</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<packaging>apklib</packaging>
 
-  <name>TODO: Add a proper name here</name>
-  <description>TODO: Add a proper description here</description>
-  <url>http://193.147.51.37/site/tk-android-media</url>
+	<name>Android Media Library</name>
+	<description>Android Media Library based on FFmpeg</description>
+	<url>http://193.147.51.37/site/tk-android-media</url>
 
-  <dependencies>
-    <dependency>
-      <groupId>com.google.android</groupId>
-      <artifactId>android</artifactId>
-      <version>2.3.1</version>
-      <scope>provided</scope>
-    </dependency>
-  </dependencies>
+	<developers>
+		<developer>
+			<id>mparis</id>
+			<name>Miguel París Díaz</name>
+			<email>mparisdiaz@gmail.com</email>
+			<organization>Urjc</organization>
+		</developer>
+		<developer>
+			<id>rbenitez</id>
+			<name>Raúl Benítez Mejías</name>
+			<email>rbenitez@gsyc.es</email>
+			<organization>Urjc</organization>
+		</developer>
+	</developers>
 
-  <build>
-    <finalName>${project.artifactId}</finalName>
-    <sourceDirectory>src</sourceDirectory>
-    <plugins>
+	<dependencies>
+		<dependency>
+			<groupId>com.google.android</groupId>
+			<artifactId>android</artifactId>
+			<version>2.3.1</version>
+			<scope>provided</scope>
+		</dependency>
+	</dependencies>
 
-      <plugin>
-		<artifactId>maven-compiler-plugin</artifactId>
-		<configuration>
-				<source>1.6</source>
-				<target>1.6</target>
-		</configuration>
-      </plugin>
+	<build>
+		<finalName>${project.artifactId}</finalName>
+		<sourceDirectory>src</sourceDirectory>
+		<plugins>
 
-      <plugin>
-        <groupId>com.jayway.maven.plugins.android.generation2</groupId>
-        <artifactId>maven-android-plugin</artifactId>
-        <version>3.0.0-alpha-2</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>ndk-build</goal>
-            </goals>
-            <configuration>
-              <clearNativeArtifacts>false</clearNativeArtifacts>
-              <attachNativeArtifacts>true</attachNativeArtifacts>
-            </configuration>
-          </execution>
-        </executions>
-      <extensions>true</extensions>
-      </plugin>
-    </plugins>
-  </build>
+			<plugin>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>1.6</source>
+					<target>1.6</target>
+				</configuration>
+			</plugin>
 
-  <distributionManagement>
-    <site>
-      <id>maven-site</id>
-      <url>scp://193.147.51.37/var/www/site/tk-android-media/${project.version}</url>
-    </site>
-  </distributionManagement>
+			<plugin>
+				<groupId>com.jayway.maven.plugins.android.generation2</groupId>
+				<artifactId>maven-android-plugin</artifactId>
+				<version>3.0.0-alpha-2</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>ndk-build</goal>
+						</goals>
+						<configuration>
+							<clearNativeArtifacts>false</clearNativeArtifacts>
+							<attachNativeArtifacts>true</attachNativeArtifacts>
+						</configuration>
+					</execution>
+				</executions>
+				<extensions>true</extensions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-site-plugin</artifactId>
+				<version>2.3</version>
+				<configuration>
+					<siteDirectory>${basedir}/site</siteDirectory>
+					<port>9000</port>
+					<tempWebappDirectory>${basedir}/target/site/tempdir</tempWebappDirectory>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+	<distributionManagement>
+		<site>
+			<id>maven-site</id>
+			<url>scp://193.147.51.37/var/www/site/tk-android-media/${project.version}</url>
+		</site>
+	</distributionManagement>
 </project>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document xmlns="http://maven.apache.org/XDOC/2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/XDOC/2.0 http://maven.apache.org/xsd/xdoc-2.0.xsd">
+
+	<properties>
+		<title>Profiles</title>
+		<author email="mparisdiaz@gmail.com">Miguel París Díaz</author>
+	</properties>
+
+	<head>
+
+	</head>
+
+	<body>
+		<section name="Media profiles supported">
+			<table>
+				<th>Media profile</th>
+				<th>Audio</th>
+				<th>Video</th>
+				<tr>
+					<!-- Low quality row -->
+					<td>Low quality</td>
+					<td>
+						<ul>
+							<li>AMR</li>
+							<li>12,2 kbps</li>
+							<li>8000 Hz</li>
+						</ul>
+					</td>
+					<td>
+						<ul>
+							<li>h263p</li>
+							<li>320 kbps</li>
+							<li>CIF</li>
+							<li>15 fps</li>
+						</ul>
+					</td>
+				</tr>
+
+				<!-- High quality row -->
+				<tr>
+					<td>High quality</td>
+					<td>
+						<ul>
+							<li>MP2</li>
+							<li>64 kbps</li>
+							<li>44100 Hz</li>
+						</ul>
+					</td>
+					<td>
+						<ul>
+							<li>mpeg4</li>
+							<li>1,5 Mbps</li>
+							<li>CIF</li>
+							<li>15 fps</li>
+						</ul>
+					</td>
+
+				</tr>
+			</table>
+
+		</section>
+
+	</body>
+
+</document>
