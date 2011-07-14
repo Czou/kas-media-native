@@ -159,6 +159,7 @@ __android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 	pthread_mutex_unlock(&mutex);
 	
 	while (av_read_frame(pFormatCtx, &avpkt) >= 0) {
+		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "audio-rx read ok");
 		avpkt_data_init = avpkt.data;
 		//Is this a avpkt from the audio stream?
 		if (avpkt.stream_index == audioStream) {
@@ -170,35 +171,50 @@ __android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 snprintf(buf, sizeof(buf), "avpkt->size: %d", avpkt.size);
 __android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 */
+			__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "174");
 			while (avpkt.size > 0) {
 				//Decode audio frame
 				out_size = DATA_SIZE;
+				__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "178");
 				len = avcodec_decode_audio3(pDecodecCtxAudio, (int16_t *) outbuf, &out_size, &avpkt);
+				__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "180");
 				if (len < 0) {
 					__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Error in audio decoding.");
 					break;
 				}
+				__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "185");
 				if (out_size > 0) {
+					__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "187");
 					(*env)->SetByteArrayRegion(env, out_buffer_audio, 0, out_size, (jbyte *) outbuf);
+					__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "189");
 					(*env)->CallVoidMethod(env, audioPlayer, midAudio, out_buffer_audio, out_size);
 				}
+				__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "192");
 				avpkt.size -= len;
 				avpkt.data += len;
 			}
 		}
-		
+		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "197");
 		//Free the packet that was allocated by av_read_frame
 		avpkt.data = avpkt_data_init;
+		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "200");
 		av_free_packet(&avpkt);
+		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "201");
 		pthread_mutex_lock(&mutex);
+		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "204");
 		receive = isReceiving;
 		pthread_mutex_unlock(&mutex);
+		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "207");
 		if (receive == 0)
 			break;
+		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "audio-rx incoming read");
+		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "-------------------------------------------");
 	}
+	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "audio-rx after while");
 	
-	free(outbuf);
+	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "214");
 	(*env)->ReleaseStringUTFChars(env, sdp_str, pSdpString);
+	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "216");
 	//Close the codec
 	avcodec_close(pDecodecCtxAudio);
 	

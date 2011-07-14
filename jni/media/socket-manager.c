@@ -89,11 +89,15 @@ snprintf(buf, sizeof(buf), "before nVideo: %d", nVideo);
 __android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
 
 	if(pAudioFormatCtx && pAudioFormatCtx->pb && (urlContext==pAudioFormatCtx->pb->opaque) && (--nAudio==0)) {
+snprintf(buf, sizeof(buf), "free pAudioFormatCtx");
 		av_free(pAudioFormatCtx);
+snprintf(buf, sizeof(buf), "free ok");
 		pAudioFormatCtx = NULL;
 	}
 	if(pVideoFormatCtx && pVideoFormatCtx->pb && (urlContext==pVideoFormatCtx->pb->opaque) && (--nVideo==0)) {
+snprintf(buf, sizeof(buf), "free pVideoFormatCtx");
 		av_free(pVideoFormatCtx);
+snprintf(buf, sizeof(buf), "free ok");
 		pVideoFormatCtx = NULL;
 	}
 	urlContext = NULL;
