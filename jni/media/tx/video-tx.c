@@ -8,6 +8,7 @@
 #include <init-media.h>
 
 #include <jni.h>
+#include <pthread.h>
 #include <android/log.h>
 
 #include "libavformat/avformat.h"
@@ -24,7 +25,7 @@
 static char buf[256]; //Log
 static char* LOG_TAG = "NDK-video-tx";
 
-
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static int sws_flags = SWS_BICUBIC;
 
 enum {
@@ -69,13 +70,12 @@ static AVFrame *alloc_picture(enum PixelFormat pix_fmt, int width, int height)
 
 static int open_video(AVFormatContext *oc, AVStream *st)
 {
+	int ret;
+	
 	AVCodec *codec;
 	AVCodecContext *c;
 	
 	c = st->codec;
-	
-	int ret;
-	
 	
 	/* find the video encoder */
 	codec = avcodec_find_encoder(c->codec_id);
@@ -262,23 +262,26 @@ Java_com_tikal_android_media_tx_MediaTx_initVideo(JNIEnv* env,
 			jobject thiz,
 			jstring outfile, jint width, jint height, jint frame_rate, jint bit_rate, jint codecId, jint payload_type, jstring presetFile)
 {
+	int i, ret;
+	
 	const char *pOutFile = NULL;
 	const char *pPresetFile = NULL;
 	URLContext *urlContext;
 	
-	int i, ret;
-	
+	pthread_mutex_lock(&mutex);
 	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "Entro en initVideo");
 	
 	pOutFile = (*env)->GetStringUTFChars(env, outfile, NULL);
-	if(pOutFile == NULL)
-    		return -1; // OutOfMemoryError already thrown
+	if (pOutFile == NULL) {
+    		ret = -1; // OutOfMemoryError already thrown
+    		goto end;
+    	}
     	
     	pPresetFile = (*env)->GetStringUTFChars(env, presetFile, NULL);
 	
-	if( (ret= init_media()) != 0) {
+	if ( (ret= init_media()) != 0) {
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Couldn't init media");
-		return ret;
+		goto end;
 	}
 /*	
 	for(i=0; i<AVMEDIA_TYPE_NB; i++){
@@ -295,7 +298,8 @@ Java_com_tikal_android_media_tx_MediaTx_initVideo(JNIEnv* env,
 	}
 	if (!fmt) {
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Could not find suitable output format");
-		return -1;
+		ret = -1;
+		goto end;
 	}
 	snprintf(buf, sizeof(buf), "Format established: %s", fmt->name);
 	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
@@ -310,7 +314,8 @@ Java_com_tikal_android_media_tx_MediaTx_initVideo(JNIEnv* env,
 	oc = avformat_alloc_context();
 	if (!oc) {
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Memory error");
-		return -2;
+		ret = -2;
+		goto end;
 	}
 	oc->oformat = fmt;
 	snprintf(oc->filename, sizeof(oc->filename), "%s", pOutFile);
@@ -321,15 +326,18 @@ Java_com_tikal_android_media_tx_MediaTx_initVideo(JNIEnv* env,
 	
 	if (fmt->video_codec != CODEC_ID_NONE) {
 		video_st = add_video_stream(oc, fmt->video_codec, width, height, frame_rate, bit_rate, pPresetFile);
-		if(!video_st)
-			return -3;
+		if(!video_st) {
+			ret = -3;
+			goto end;
+		}
 	}
 
 	/* set the output parameters (must be done even if no
 	parameters). */
 	if (av_set_parameters(oc, NULL) < 0) {
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Invalid output format parameters");
-		return -3;
+		ret = -4;
+		goto end;
 	}
 	
 	av_dump_format(oc, 0, pOutFile, 1);
@@ -341,7 +349,7 @@ Java_com_tikal_android_media_tx_MediaTx_initVideo(JNIEnv* env,
 	if (video_st) {
 		if((ret = open_video(oc, video_st)) < 0) {
 			__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Could not open video");
-			return ret;
+			goto end;
 		}
 	}
 
@@ -350,21 +358,21 @@ Java_com_tikal_android_media_tx_MediaTx_initVideo(JNIEnv* env,
 		if ((ret = avio_open(&oc->pb, pOutFile, URL_WRONLY)) < 0) {
 			snprintf(buf, sizeof(buf), "Could not open '%s'", pOutFile);
 			__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
-			return ret;
+			goto end;
 		}
 	}
 	
 	//Free old URLContext
-	if( (ret=ffurl_close(oc->pb->opaque)) < 0) {
+	if ( (ret=ffurl_close(oc->pb->opaque)) < 0) {
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Could not free URLContext");
-		return ret;
+		goto end;
 	}
 	
 	urlContext = get_video_connection();
-	if ((ret = rtp_set_remote_url (urlContext, pOutFile)) < 0) {
+	if ((ret=rtp_set_remote_url (urlContext, pOutFile)) < 0) {
 		snprintf(buf, sizeof(buf), "Could not open '%s' AVERROR_NOENT:%d", pOutFile, AVERROR_NOENT);
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
-		return ret;
+		goto end;
 	}
 	
 	oc->pb->opaque = urlContext;
@@ -379,7 +387,11 @@ Java_com_tikal_android_media_tx_MediaTx_initVideo(JNIEnv* env,
 	(*env)->ReleaseStringUTFChars(env, outfile, pOutFile);
 	(*env)->ReleaseStringUTFChars(env, presetFile, pPresetFile);
 	
-	return 0;
+	ret = 0;
+	
+end:
+	pthread_mutex_unlock(&mutex);
+	return ret;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -462,9 +474,18 @@ Java_com_tikal_android_media_tx_MediaTx_putVideoFrame(JNIEnv* env,
 						jobject thiz,
 						jbyteArray frame)
 {
+	int ret;
+	
 	uint8_t *picture2_buf;
 	int size;
+	
+	pthread_mutex_lock(&mutex);
 
+	if (!oc) {
+		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "No video initiated.");
+		ret = -1;
+		goto end;
+	}
 	size = avpicture_get_size(video_st->codec->pix_fmt, video_st->codec->width, video_st->codec->height);
 	picture2_buf = av_malloc(size);
 	avpicture_fill((AVPicture *)picture, picture2_buf,
@@ -473,21 +494,25 @@ Java_com_tikal_android_media_tx_MediaTx_putVideoFrame(JNIEnv* env,
 	
 	picture_buf = (uint8_t*)((*env)->GetByteArrayElements(env, frame, JNI_FALSE));
 	//Asociamos el frame a tmp_picture por si el pix_fmt es distinto de PIX_FMT_YUV420P
-	int ret = avpicture_fill((AVPicture *)tmp_picture, picture_buf,
+	avpicture_fill((AVPicture *)tmp_picture, picture_buf,
 			PIX_FMT_TMP_PICTURE, video_st->codec->width, video_st->codec->height);
 			
 		
 	
-	if(write_video_frame(oc, video_st) < 0) {
+	if (write_video_frame(oc, video_st) < 0) {
 		(*env)->ReleaseByteArrayElements(env, frame, picture_buf, 0);
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Could not write video frame");
-		return -1;
+		ret = -2;
+		goto end;
 	}
 
 	(*env)->ReleaseByteArrayElements(env, frame, picture_buf, 0);
 	av_free(picture2_buf);
+	ret = 0;
 	
-	return 0;
+end:
+	pthread_mutex_unlock(&mutex);
+	return ret;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -510,13 +535,13 @@ jint
 Java_com_tikal_android_media_tx_MediaTx_finishVideo (JNIEnv* env,
 						jobject thiz)
 {
-__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "finishVideo");
 	int i;
 	/* write the trailer, if any.  the trailer must be written
 	* before you close the CodecContexts open when you wrote the
 	* header; otherwise write_trailer may try to use memory that
 	* was freed on av_codec_close() */
-	if(oc) {
+	pthread_mutex_lock(&mutex);
+	if (oc) {
 		av_write_trailer(oc);		
 		/* close codec */
 		if (video_st)
@@ -526,12 +551,11 @@ __android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "finishVideo");
 			av_freep(&oc->streams[i]->codec);
 			av_freep(&oc->streams[i]);
 		}
-		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Close the context...");
+		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "Close the context...");
 		close_context(oc);
 		oc = NULL;
-		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "ok");
-	}
-__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "533");		
+		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "ok");
+	}	
 /*	for (i=0;i<AVMEDIA_TYPE_NB;i++)
 		av_free(avcodec_opts[i]);
 __android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "536");	
@@ -539,7 +563,7 @@ __android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "536");
 __android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "538");	
 	av_free(sws_opts);
 */
-__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "return...");	
+	pthread_mutex_unlock(&mutex);
 	return 0;
 }
 

@@ -7,19 +7,18 @@
 #include <init-media.h>
 
 #include <jni.h>
+#include <pthread.h>
 #include <android/log.h>
 
 #include "libavformat/avformat.h"
 #include "libswscale/swscale.h"
-#include <pthread.h>
-
 
 
 static char buf[256]; //Log
 static char* LOG_TAG = "NDK-video-rx";
 
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-static int isReceiving = 0;
+static int receive = 0;
 static int sws_flags = SWS_BICUBIC;
 
 
@@ -28,11 +27,9 @@ jint
 Java_com_tikal_android_media_rx_MediaRx_stopVideoRx(JNIEnv* env,
 				jobject thiz)
 {
-	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "Stop video");
 	pthread_mutex_lock(&mutex);
-	isReceiving = 0;
+	receive = 0;
 	pthread_mutex_unlock(&mutex);
-	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "Stop video OK");
 	return 0;
 }
 
@@ -88,8 +85,7 @@ Java_com_tikal_android_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 	if ( (ret = av_find_stream_info(pFormatCtx)) < 0) {
 		snprintf(buf, sizeof(buf), "Couldn't find stream information: %d", ret);
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
-		//Close the video file
-		av_close_input_file(pFormatCtx);
+		close_context(pFormatCtx);
 		return -3;
 	}
 	
@@ -167,17 +163,16 @@ Java_com_tikal_android_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 	
 	//READING THE DATA
 	pthread_mutex_lock(&mutex);
-	isReceiving = 1;
+	receive = 1;
 	pthread_mutex_unlock(&mutex);
 	for(;;) {
-		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "video-rx incoming read");
 		pthread_mutex_lock(&mutex);
-		if(!isReceiving) {
+		if (!receive) {
 			pthread_mutex_unlock(&mutex);
 			break;
 		}
+		pthread_mutex_unlock(&mutex);
 		if (av_read_frame(pFormatCtx, &avpkt) >= 0) {
-			__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "video-rx read ok");
 			avpkt_data_init = avpkt.data;
 			//Is this a avpkt from the video stream?
 			if (avpkt.stream_index == videoStream) {
@@ -194,6 +189,11 @@ Java_com_tikal_android_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 					len = avcodec_decode_video2(pDecodecCtxVideo, pFrame, &got_picture, &avpkt);
 					if (len < 0) {
 						__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Error in video decoding.");
+						break;
+					}
+					pthread_mutex_lock(&mutex);
+					if (!receive) {
+						pthread_mutex_unlock(&mutex);
 						break;
 					}
 					//Did we get a video frame?
@@ -218,6 +218,8 @@ Java_com_tikal_android_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 						(*env)->CallVoidMethod(env, videoPlayer, midVideo, out_buffer_video,
 								pDecodecCtxVideo->width, pDecodecCtxVideo->height);
 					}
+					pthread_mutex_unlock(&mutex);
+					
 					avpkt.size -= len;
 					avpkt.data += len;
 				}
@@ -227,29 +229,24 @@ Java_com_tikal_android_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 			avpkt.data = avpkt_data_init;
 			av_free_packet(&avpkt);
 		}
-		pthread_mutex_unlock(&mutex);
+		
 	}
-	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "video-rx after while");
 	
 	(*env)->ReleaseStringUTFChars(env, sdp_str, pSdpString);
-	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "222");
+	
 	//Free the RGB image
 	av_free(buffer);
-	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "224");
 	av_free(pFrameRGB);
-	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "226");
 
 	//Free the YUV frame
 	av_free(pFrame);
-	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "231");
 	//Close the codec
 	avcodec_close(pDecodecCtxVideo);
-	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "234");
 
 	//Close the video file
-	__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Close the context...");
+	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "Close the context...");
 	close_context(pFormatCtx);
-	__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "ok");
+	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "ok");
 
 	return 0;
 }

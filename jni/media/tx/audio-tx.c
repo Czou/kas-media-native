@@ -9,6 +9,7 @@
 #include <socket-manager.h>
 
 #include <jni.h>
+#include <pthread.h>
 #include <android/log.h>
 
 #include "libavformat/avformat.h"
@@ -26,7 +27,8 @@
 static char buf[256]; //Log
 static char* LOG_TAG = "NDK-audio-tx";
 
-static int sws_flags = SWS_BICUBIC;
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+//static int sws_flags = SWS_BICUBIC;
 
 //Coupled with Java
 int AUDIO_CODECS[] = {CODEC_ID_AMR_NB, CODEC_ID_MP2, CODEC_ID_AAC};
@@ -113,19 +115,23 @@ Java_com_tikal_android_media_tx_MediaTx_initAudio (JNIEnv* env,
 						jobject thiz,
 						jstring outfile, jint codec_id, jint sample_rate, jint bit_rate, jint payload_type)
 {
+	int i, ret;
+	
 	const char *pOutFile = NULL;
 	URLContext *urlContext;
-	int i, ret;
-
+	
+	
+	pthread_mutex_lock(&mutex);
 	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "Entro en initAudio");	
 	
 	pOutFile = (*env)->GetStringUTFChars(env, outfile, NULL);
-	if(pOutFile == NULL)
-    		return -1; // OutOfMemoryError already thrown
-
-	if( (ret= init_media()) != 0) {
+	if (pOutFile == NULL) {
+    		ret = -1; // OutOfMemoryError already thrown
+    		goto end;
+    	}
+	if ( (ret= init_media()) != 0) {
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Couldn't init media");
-		return ret;
+		goto end;
 	}
 /*	
 	for(i=0; i<AVMEDIA_TYPE_NB; i++){
@@ -142,7 +148,8 @@ Java_com_tikal_android_media_tx_MediaTx_initAudio (JNIEnv* env,
 	}
 	if (!fmt) {
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Could not find suitable output format");
-		return -1;
+		ret = -1;
+		goto end;
 	}
 	snprintf(buf, sizeof(buf), "Format established: %s", fmt->name);
 	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
@@ -158,7 +165,8 @@ Java_com_tikal_android_media_tx_MediaTx_initAudio (JNIEnv* env,
 	oc = avformat_alloc_context();
 	if (!oc) {
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Memory error: Could not alloc context");
-		return -2;
+		ret = -2;
+		goto end;
 	}
 	oc->oformat = fmt;
 	snprintf(oc->filename, sizeof(oc->filename), "%s", pOutFile);
@@ -175,7 +183,8 @@ Java_com_tikal_android_media_tx_MediaTx_initAudio (JNIEnv* env,
 	parameters). */
 	if (av_set_parameters(oc, NULL) < 0) {
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Invalid output format parameters");
-		return -3;
+		ret = -3;
+		goto end;
 	}
 	
 	av_dump_format(oc, 0, pOutFile, 1);
@@ -187,7 +196,7 @@ Java_com_tikal_android_media_tx_MediaTx_initAudio (JNIEnv* env,
 	if (audio_st) {
 		if((ret = open_audio(oc, audio_st)) < 0) {
 			__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Could not open audio");
-			return ret;
+			goto end;
 		}
 	}
 	
@@ -196,21 +205,21 @@ Java_com_tikal_android_media_tx_MediaTx_initAudio (JNIEnv* env,
 		if ((ret = avio_open(&oc->pb, pOutFile, URL_WRONLY)) < 0) {
 			snprintf(buf, sizeof(buf), "Could not open '%s' AVERROR_NOENT:%d", pOutFile, AVERROR_NOENT);
 			__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
-			return ret;
+			goto end;
 		}
 	}
 	
 	//Free old URLContext
 	if( (ret=ffurl_close(oc->pb->opaque)) < 0) {
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Could not free URLContext");
-		return ret;
+		goto end;
 	}
 	
 	urlContext = get_audio_connection();
 	if ((ret = rtp_set_remote_url (urlContext, pOutFile)) < 0) {
 		snprintf(buf, sizeof(buf), "Could not open '%s'", pOutFile);
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
-		return ret;
+		goto end;
 	}
 	
 	oc->pb->opaque = urlContext;
@@ -224,7 +233,11 @@ Java_com_tikal_android_media_tx_MediaTx_initAudio (JNIEnv* env,
 
 	(*env)->ReleaseStringUTFChars(env, outfile, pOutFile);
 	
-	return audio_st->codec->frame_size;
+	ret = audio_st->codec->frame_size;
+	
+end:
+	pthread_mutex_unlock(&mutex);
+	return ret;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -269,28 +282,38 @@ Java_com_tikal_android_media_tx_MediaTx_putAudioSamples (JNIEnv* env,
 	int i, ret, nframes, frame_size;
 	
 	//FIXME: controlar el tamaño del array pasado y levantar un error si no es correcto.
+	pthread_mutex_lock(&mutex);
+	if (!oc) {
+		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "No audio initiated.");
+		ret = -1;
+		goto end;
+	}
 	
 	samples = (int16_t*)((*env)->GetShortArrayElements(env, in_buffer, JNI_FALSE));
-	if(samples == NULL) {
+	if (samples == NULL) {
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Error in samples (NULL)");
-    		return -1;
+    		ret = -2;
+		goto end;
     	}
 	
 	frame_size = audio_st->codec->frame_size;
 	nframes = in_size / frame_size;
 
 
-	for(i=0; i<nframes; i++) {
+	for (i=0; i<nframes; i++) {
 		if( (ret=write_audio_frame(oc, audio_st, &samples[i*frame_size])) < 0) {
 			(*env)->ReleaseShortArrayElements(env, in_buffer, samples, 0);
 			__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Could not write audio frame");
-			return ret;
+			goto end;
 		}
 	}	
 	
 	(*env)->ReleaseShortArrayElements(env, in_buffer, samples, 0);
+	ret = 0;
 	
-	return 0;
+end:
+	pthread_mutex_unlock(&mutex);
+	return ret;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -310,12 +333,12 @@ jint
 Java_com_tikal_android_media_tx_MediaTx_finishAudio (JNIEnv* env,
 						jobject thiz)
 {
-__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "finishAudio");
 	int i;
 	/* write the trailer, if any.  the trailer must be written
 	* before you close the CodecContexts open when you wrote the
 	* header; otherwise write_trailer may try to use memory that
 	* was freed on av_codec_close() */
+	pthread_mutex_lock(&mutex);
 	if(oc) {
 		av_write_trailer(oc);
 		/* close codec */
@@ -326,12 +349,12 @@ __android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "finishAudio");
 			av_freep(&oc->streams[i]->codec);
 			av_freep(&oc->streams[i]);
 		}
-		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Close the context...");
+		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "Close the context...");
 		close_context(oc);
 		oc = NULL;
-		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "ok");
+		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "ok");
 	}
-__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "333");	
+	
 /*	for (i=0;i<AVMEDIA_TYPE_NB;i++)
 		av_free(avcodec_opts[i]);
 __android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "336");	
@@ -339,7 +362,7 @@ __android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "336");
 __android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "338");	
 	av_free(sws_opts);
 */
-__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "return...");
+	pthread_mutex_unlock(&mutex);
 	return 0;
 }
 

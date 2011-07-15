@@ -5,9 +5,10 @@
  */
 
 #include "socket-manager.h"
+
 #include <jni.h>
-#include <android/log.h>
 #include <pthread.h>
+#include <android/log.h>
 
 #include "libavformat/rtsp.h"
 
