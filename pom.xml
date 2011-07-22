@@ -8,7 +8,7 @@
 
 	<name>Android Media Library</name>
 	<description>Android Media Library based on FFmpeg</description>
-	<url>http://193.147.51.37/site/tk-android-media</url>
+	<url>http://repository.kurento.com/site/tk-android-media</url>
 
 	<developers>
 		<developer>
@@ -105,7 +105,7 @@
 	<distributionManagement>
 		<site>
 			<id>maven-site</id>
-			<url>scp://193.147.51.37/var/www/site/tk-android-media/${project.version}</url>
+			<url>scp://repository.kurento.com/var/www/site/tk-android-media/${project.version}</url>
 		</site>
 		<repository>
 			<id>releases</id>
