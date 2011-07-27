@@ -20,8 +20,15 @@ public class MediaTx {
 	/**
 	 * Returns the frame size used to encode
 	 */
-	public static native int initAudio(String outfile, int codec_id,
+	private static native int initAudio(String outfile, int codec_id,
 			int sample_rate, int bit_rate, int payload_type);
+
+	public int initAudio(AudioInfoTx audioInfoTx) {
+		return initAudio(audioInfoTx.getOut(), audioInfoTx.getAudioProfile()
+				.getAudioCodecType().getCodecID(), audioInfoTx
+				.getAudioProfile().getSampleRate(), audioInfoTx
+				.getAudioProfile().getBitRate(), audioInfoTx.getPayloadType());
+	}
 
 	public static native int putAudioSamples(short[] in_buffer, int in_size);
 

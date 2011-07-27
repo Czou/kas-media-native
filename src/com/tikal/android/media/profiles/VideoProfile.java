@@ -1,21 +1,55 @@
 package com.tikal.android.media.profiles;
 
-import com.tikal.android.media.VideoCodec;
+import com.tikal.android.media.VideoCodecType;
 
 public enum VideoProfile {
-	LOW_QUALITY(VideoCodec.CODEC_ID_H263, 32000, 15, 352, 288, "h263p CIF bit_rate=320000"),
-	HIGH_QUALITY(VideoCodec.CODEC_ID_MPEG4, 1500000, 15, 352, 288, "mpeg4 CIF bit_rate=1500000");
+	H263(MediaQuality.LOW, VideoCodecType.H263, 32000, 15, 352, 288,
+			"h263p CIF bit_rate=320000"),
+	MPEG4(MediaQuality.HEIGH,
+			VideoCodecType.MPEG4, 1500000, 15, 352, 288,
+			"mpeg4 CIF bit_rate=1500000");
 
-	private int codecID;
+	private MediaQuality mediaQuality;
+	private VideoCodecType videoCodecType;
 	private int bitRate;
 	private int frameRate;
 	private int width;
 	private int height;
 	private String description;
 
-	private VideoProfile(int codecID, int bitRate, int frameRate, int width,
-			int height, String description) {
-		this.codecID = codecID;
+	public MediaQuality getMediaQuality() {
+		return mediaQuality;
+	}
+
+	public VideoCodecType getVideoCodecType() {
+		return videoCodecType;
+	}
+
+	public int getBitRate() {
+		return bitRate;
+	}
+
+	public int getFrameRate() {
+		return frameRate;
+	}
+
+	public int getWidth() {
+		return width;
+	}
+
+	public int getHeight() {
+		return height;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	private VideoProfile(MediaQuality mediaQuality,
+			VideoCodecType videoCodecType, int bitRate, int frameRate,
+			int width, int height, String description) {
+		this.mediaQuality = mediaQuality;
+		this.videoCodecType = videoCodecType;
 		this.bitRate = bitRate;
 		this.frameRate = frameRate;
 		this.width = width;
