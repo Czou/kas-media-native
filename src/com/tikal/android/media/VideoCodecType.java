@@ -46,4 +46,15 @@ public enum VideoCodecType {
 		throw new CodecNotSupportedException("Codec not supported");
 	}
 	
+	public static VideoCodecType getCodecTypeFromName(String codecName) throws CodecNotSupportedException {
+		if (H264.arrayCodecStrings.contains(codecName))
+			return H264;
+		else if (MPEG4.arrayCodecStrings.contains(codecName))
+			return MPEG4;
+		else if (H263.arrayCodecStrings.contains(codecName))
+			return H263;
+
+		throw new CodecNotSupportedException("Codec not supported");
+	}
+	
 }

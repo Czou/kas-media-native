@@ -1,16 +1,28 @@
 package com.tikal.android.media.tx;
 
 /**
+ * <p>
+ * Provides static methods that map native media functions.
  * 
+ * </p>
  * @author Miguel París Díaz
  * 
  */
 public class MediaTx {
 
 	// VIDEO
-	public static native int initVideo(String outfile, int width, int height,
+	private static native int initVideo(String outfile, int width, int height,
 			int frame_rate, int bit_rate, int codecId, int payload_type,
 			String presetFile);
+
+	public static int initVideo(VideoInfoTx videoInfoTx) {
+		return initVideo(videoInfoTx.getOut(), videoInfoTx.getVideoProfile()
+				.getWidth(), videoInfoTx.getVideoProfile().getHeight(),
+				videoInfoTx.getVideoProfile().getFrameRate(), videoInfoTx
+						.getVideoProfile().getBitRate(), videoInfoTx
+						.getVideoProfile().getVideoCodecType().getCodecID(),
+				videoInfoTx.getPayloadType(), "");
+	}
 
 	public static native int putVideoFrame(byte[] frame);
 
@@ -23,7 +35,7 @@ public class MediaTx {
 	private static native int initAudio(String outfile, int codec_id,
 			int sample_rate, int bit_rate, int payload_type);
 
-	public int initAudio(AudioInfoTx audioInfoTx) {
+	public static int initAudio(AudioInfoTx audioInfoTx) {
 		return initAudio(audioInfoTx.getOut(), audioInfoTx.getAudioProfile()
 				.getAudioCodecType().getCodecID(), audioInfoTx
 				.getAudioProfile().getSampleRate(), audioInfoTx

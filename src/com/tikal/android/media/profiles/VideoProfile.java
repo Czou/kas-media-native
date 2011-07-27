@@ -56,4 +56,13 @@ public enum VideoProfile {
 		this.height = height;
 		this.description = description;
 	}
+	
+	public static VideoProfile getVideoProfileFromVideoCodecType(VideoCodecType videoCodecType) {
+		if (H263.videoCodecType.equals(videoCodecType))
+			return H263;
+		if (MPEG4.videoCodecType.equals(videoCodecType))
+			return MPEG4;
+
+		return null;
+	}
 }

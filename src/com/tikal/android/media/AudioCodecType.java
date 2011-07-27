@@ -55,4 +55,15 @@ public enum AudioCodecType {
 		throw new CodecNotSupportedException("Codec not supported");
 	}
 	
+	public static AudioCodecType getCodecTypeFromName(String codecName) throws CodecNotSupportedException {
+		if (AMR.arrayCodecStrings.contains(codecName))
+			return AMR;
+		else if (MP2.arrayCodecStrings.contains(codecName))
+			return MP2;
+		else if (AAC.arrayCodecStrings.contains(codecName))
+			return AAC;
+
+		throw new CodecNotSupportedException("Codec not supported");
+	}
+	
 }
