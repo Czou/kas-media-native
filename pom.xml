@@ -118,4 +118,10 @@
 			<url>scp://repository.kurento.com/opt/tomcat/current/data/repositories/snapshots</url>
 		</snapshotRepository>
 	</distributionManagement>
+
+	<scm>
+		<connection>scm:git:ssh://repository.kurento.com/git/tk-android-media</connection>
+		<developerConnection>scm:git:ssh://repository.kurento.com/git/tk-android-media</developerConnection>
+		<url>scm:git:ssh://repository.kurento.com/git/tk-android-media</url>
+	</scm>
 </project>
