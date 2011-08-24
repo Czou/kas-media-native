@@ -1,4 +1,4 @@
-package com.tikal.android.media.rx;
+package com.kurento.kas.media.rx;
 
 /**
  * 

@@ -1,6 +1,6 @@
-package com.tikal.android.media.profiles;
+package com.kurento.kas.media.profiles;
 
-import com.tikal.android.media.AudioCodecType;
+import com.kurento.kas.media.AudioCodecType;
 
 public enum AudioProfile {
 	AMR(MediaQuality.LOW, AudioCodecType.AMR, AudioCodecType.AMR

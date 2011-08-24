@@ -111,7 +111,7 @@ static AVStream *add_audio_stream(AVFormatContext *oc, enum CodecID codec_id, in
 }
 
 jint
-Java_com_tikal_android_media_tx_MediaTx_initAudio (JNIEnv* env,
+Java_com_kurento_kas_media_tx_MediaTx_initAudio (JNIEnv* env,
 						jobject thiz,
 						jstring outfile, jint codec_id, jint sample_rate, jint bit_rate, jint payload_type)
 {
@@ -274,7 +274,7 @@ static int write_audio_frame(AVFormatContext *oc, AVStream *st, int16_t *samples
 }
 
 jint
-Java_com_tikal_android_media_tx_MediaTx_putAudioSamples (JNIEnv* env,
+Java_com_kurento_kas_media_tx_MediaTx_putAudioSamples (JNIEnv* env,
 						jobject thiz,
 						jshortArray in_buffer, jint in_size)
 {
@@ -330,7 +330,7 @@ static void close_audio(AVFormatContext *oc, AVStream *st)
 }
 
 jint
-Java_com_tikal_android_media_tx_MediaTx_finishAudio (JNIEnv* env,
+Java_com_kurento_kas_media_tx_MediaTx_finishAudio (JNIEnv* env,
 						jobject thiz)
 {
 	int i;

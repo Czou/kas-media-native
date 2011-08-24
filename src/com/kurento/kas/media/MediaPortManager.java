@@ -1,4 +1,4 @@
-package com.tikal.android.media;
+package com.kurento.kas.media;
 
 public class MediaPortManager {
 

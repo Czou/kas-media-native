@@ -1,4 +1,4 @@
-package com.tikal.android.media.profiles;
+package com.kurento.kas.media.profiles;
 
 public enum MediaQuality {
 	LOW,

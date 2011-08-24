@@ -1,6 +1,6 @@
-package com.tikal.android.media.profiles;
+package com.kurento.kas.media.profiles;
 
-import com.tikal.android.media.VideoCodecType;
+import com.kurento.kas.media.VideoCodecType;
 
 public enum VideoProfile {
 	H263(MediaQuality.LOW, VideoCodecType.H263, 32000, 15, 352, 288,

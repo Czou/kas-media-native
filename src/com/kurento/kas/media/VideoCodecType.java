@@ -1,8 +1,8 @@
-package com.tikal.android.media;
+package com.kurento.kas.media;
 
 import java.util.ArrayList;
 
-import com.tikal.android.media.exception.CodecNotSupportedException;
+import com.kurento.kas.media.exception.CodecNotSupportedException;
 
 /**
  * 

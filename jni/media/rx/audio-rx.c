@@ -26,7 +26,7 @@ static int receive = 0;
 
 
 jint
-Java_com_tikal_android_media_rx_MediaRx_stopAudioRx(JNIEnv* env,
+Java_com_kurento_kas_media_rx_MediaRx_stopAudioRx(JNIEnv* env,
 				jobject thiz)
 {
 	pthread_mutex_lock(&mutex);
@@ -37,7 +37,7 @@ Java_com_tikal_android_media_rx_MediaRx_stopAudioRx(JNIEnv* env,
 
 
 jint
-Java_com_tikal_android_media_rx_MediaRx_startAudioRx(JNIEnv* env, jobject thiz,
+Java_com_kurento_kas_media_rx_MediaRx_startAudioRx(JNIEnv* env, jobject thiz,
 				jstring sdp_str, jobject audioPlayer)
 {
 	

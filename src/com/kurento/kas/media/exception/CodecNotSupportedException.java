@@ -1,4 +1,4 @@
-package com.tikal.android.media.exception;
+package com.kurento.kas.media.exception;
 
 /**
  * 

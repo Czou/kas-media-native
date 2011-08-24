@@ -258,7 +258,7 @@ pCodecCtx->rc_min_rate = 1000000;
 }
 
 jint
-Java_com_tikal_android_media_tx_MediaTx_initVideo(JNIEnv* env,
+Java_com_kurento_kas_media_tx_MediaTx_initVideo(JNIEnv* env,
 			jobject thiz,
 			jstring outfile, jint width, jint height, jint frame_rate, jint bit_rate, jint codecId, jint payload_type, jstring presetFile)
 {
@@ -470,7 +470,7 @@ static int write_video_frame(AVFormatContext *oc, AVStream *st)
 }
 
 jint
-Java_com_tikal_android_media_tx_MediaTx_putVideoFrame(JNIEnv* env,
+Java_com_kurento_kas_media_tx_MediaTx_putVideoFrame(JNIEnv* env,
 						jobject thiz,
 						jbyteArray frame)
 {
@@ -532,7 +532,7 @@ static void close_video(AVFormatContext *oc, AVStream *st)
 
 
 jint
-Java_com_tikal_android_media_tx_MediaTx_finishVideo (JNIEnv* env,
+Java_com_kurento_kas_media_tx_MediaTx_finishVideo (JNIEnv* env,
 						jobject thiz)
 {
 	int i;

@@ -1,6 +1,6 @@
-package com.tikal.android.media.tx;
+package com.kurento.kas.media.tx;
 
-import com.tikal.android.media.profiles.AudioProfile;
+import com.kurento.kas.media.profiles.AudioProfile;
 
 /**
  * 
