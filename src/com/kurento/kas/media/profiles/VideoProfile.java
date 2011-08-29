@@ -3,7 +3,7 @@ package com.kurento.kas.media.profiles;
 import com.kurento.kas.media.VideoCodecType;
 
 public enum VideoProfile {
-	H263(MediaQuality.LOW, VideoCodecType.H263, 32000, 15, 352, 288,
+	H263(MediaQuality.LOW, VideoCodecType.H263, 320000, 15, 352, 288,
 			"h263p CIF bit_rate=320000"),
 	MPEG4(MediaQuality.HEIGH,
 			VideoCodecType.MPEG4, 1500000, 15, 352, 288,
