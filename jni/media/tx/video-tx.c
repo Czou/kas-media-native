@@ -183,8 +183,9 @@ static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id, in
 	c->codec_type = AVMEDIA_TYPE_VIDEO;
 	
 	/* put sample parameters */
-	c->bit_rate = bit_rate;//bit_rate;//384000;//384000;//4000000;//1024000;//256000;//400000;
+	c->bit_rate = bit_rate;
 	c->rc_max_rate = bit_rate;
+	c->rc_min_rate = bit_rate;
 	
 	/* resolution must be a multiple of two */
 	c->width = width;
