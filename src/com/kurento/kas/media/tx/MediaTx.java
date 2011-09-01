@@ -24,7 +24,7 @@ public class MediaTx {
 				videoInfoTx.getPayloadType(), "");
 	}
 
-	public static native int putVideoFrame(byte[] frame);
+	public static native int putVideoFrame(byte[] frame, int width, int height);
 
 	public static native int finishVideo();
 

@@ -30,7 +30,7 @@ static int sws_flags = SWS_BICUBIC;
 
 enum {
 	OUTBUF_SIZE = 800*1024,
-	PIX_FMT_TMP_PICTURE = PIX_FMT_NV21,
+	SRC_PIX_FMT = PIX_FMT_NV21,
 };
 
 //Coupled with Java
@@ -165,8 +165,11 @@ static int opt_preset(const char *preset_file)
 	return 0;
 }
 
-/* add a video output stream */
-//Semejante a new_video_stream en ffmpeg.c
+
+/**
+ * add a video output stream
+ * see new_video_stream in ffmpeg.c
+ */
 static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id, int width, int height, int frame_rate, int bit_rate, const char *preset_file)
 {
 	AVCodecContext *c;
@@ -401,6 +404,7 @@ end:
 ////////////////////////////////////////////////////////////////////////////////////////
 //PUT VIDEO FRAME
 
+/*
 static void NV21_to_YUV420P(AVFrame *pictNV21, AVFrame *pictYUV420P, int width, int height)
 {
 	int i, length;
@@ -420,18 +424,46 @@ static void NV21_to_YUV420P(AVFrame *pictNV21, AVFrame *pictYUV420P, int width, 
 	}
  	
 }
+*/
 
-static int write_video_frame(AVFormatContext *oc, AVStream *st)
+/**
+ * see ffmpeg.c
+ */
+static int write_video_frame(AVFormatContext *oc, AVStream *st, int srcWidth, int srcHeight)
 {
 	int out_size, ret;
 	AVCodecContext *c;
-	static struct SwsContext *img_convert_ctx;
+	struct SwsContext *img_convert_ctx;
 
 	c = st->codec;
+	
+	//Change pix formar and resample if it is necesary
+//	snprintf(buf, sizeof(buf), "c->width: %d \t c->height: %d \t srcWidth: %d \t srcHeight: %d", c->width, c->height, srcWidth, srcHeight);
+//		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+	
+	
+//	if ( srcWidth==c->width  &&  srcHeight==c->height) {
+//		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "NV21_to_YUV420P");
+//		NV21_to_YUV420P(tmp_picture, picture, c->width, c->height);
+//	} else {
+//		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "Crea scale context");
+		img_convert_ctx = sws_getContext(srcWidth, srcHeight,
+						SRC_PIX_FMT,
+						c->width, c->height,
+						c->pix_fmt,
+						sws_flags, NULL, NULL, NULL);
+		if (img_convert_ctx == NULL) {
+			__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Cannot initialize the conversion context");
+			return -1;
+		}
+		sws_scale(img_convert_ctx, tmp_picture->data, tmp_picture->linesize,
+			0, c->height, picture->data, picture->linesize);
+//	}
+	
+	
 
-	//NV21 to YUV420P
-	NV21_to_YUV420P(tmp_picture, picture, c->width, c->height);
-
+	
+	
 	if (oc->oformat->flags & AVFMT_RAWPICTURE) {
 		/* raw video case. The API will change slightly in the near
 		futur for that */
@@ -473,7 +505,7 @@ static int write_video_frame(AVFormatContext *oc, AVStream *st)
 jint
 Java_com_kurento_kas_media_tx_MediaTx_putVideoFrame(JNIEnv* env,
 						jobject thiz,
-						jbyteArray frame)
+						jbyteArray frame, jint width, jint height)
 {
 	int ret;
 	
@@ -496,11 +528,11 @@ Java_com_kurento_kas_media_tx_MediaTx_putVideoFrame(JNIEnv* env,
 	picture_buf = (uint8_t*)((*env)->GetByteArrayElements(env, frame, JNI_FALSE));
 	//Asociamos el frame a tmp_picture por si el pix_fmt es distinto de PIX_FMT_YUV420P
 	avpicture_fill((AVPicture *)tmp_picture, picture_buf,
-			PIX_FMT_TMP_PICTURE, video_st->codec->width, video_st->codec->height);
+			SRC_PIX_FMT, width, height);
 			
 		
 	
-	if (write_video_frame(oc, video_st) < 0) {
+	if (write_video_frame(oc, video_st,  width, height) < 0) {
 		(*env)->ReleaseByteArrayElements(env, frame, picture_buf, 0);
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Could not write video frame");
 		ret = -2;
