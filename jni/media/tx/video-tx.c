@@ -170,7 +170,7 @@ static int opt_preset(const char *preset_file)
  * add a video output stream
  * see new_video_stream in ffmpeg.c
  */
-static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id, int width, int height, int frame_rate, int bit_rate, const char *preset_file)
+static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id, int width, int height, int frame_rate, int bit_rate, int gop_size, const char *preset_file)
 {
 	AVCodecContext *c;
 	AVStream *st;
@@ -199,13 +199,16 @@ static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id, in
 	identically 1. */
 	c->time_base.den = frame_rate;	//15;
 	c->time_base.num = 1;
-	c->gop_size = 1;//12; /* emit one intra frame every twelve frames at most */
+	c->gop_size = gop_size;//12; /* emit one intra frame every twelve frames at most */
+	c->max_b_frames=0;
 	c->pix_fmt = PIX_FMT_YUV420P;
 //	c->pix_fmt = PIX_FMT_NV21;
 
 	c->rc_buffer_size = c->bit_rate*(int64_t)c->time_base.num;
 
 snprintf(buf, sizeof(buf), "bit_rate: %d", c->bit_rate);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+snprintf(buf, sizeof(buf), "gop_size: %d\tmax_b_frames: %d", c->gop_size, c->max_b_frames);
 __android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 
 	if (c->codec_id == CODEC_ID_MPEG2VIDEO) {
@@ -264,7 +267,7 @@ pCodecCtx->rc_min_rate = 1000000;
 jint
 Java_com_kurento_kas_media_tx_MediaTx_initVideo(JNIEnv* env,
 			jobject thiz,
-			jstring outfile, jint width, jint height, jint frame_rate, jint bit_rate, jint codecId, jint payload_type, jstring presetFile)
+			jstring outfile, jint width, jint height, jint frame_rate, jint bit_rate, jint gop_size, jint codecId, jint payload_type, jstring presetFile)
 {
 	int i, ret;
 	
@@ -292,7 +295,7 @@ Java_com_kurento_kas_media_tx_MediaTx_initVideo(JNIEnv* env,
 		avcodec_opts[i]= avcodec_alloc_context2(i);
 	}
 	avformat_opts = avformat_alloc_context();
-	sws_opts = sws_getContext(16,16,0, 16,16,0, sws_flags, NULL,NULL,NULL);
+	sws_opts = sws_getContext(16,16,0, 16,16,0, sws_flags, NULL,NULL,NULL);a
 +/	
 	/* auto detect the output format from the name. default is mp4. */
 	fmt = av_guess_format(NULL, pOutFile, NULL);
@@ -329,7 +332,7 @@ Java_com_kurento_kas_media_tx_MediaTx_initVideo(JNIEnv* env,
 	video_st = NULL;
 	
 	if (fmt->video_codec != CODEC_ID_NONE) {
-		video_st = add_video_stream(oc, fmt->video_codec, width, height, frame_rate, bit_rate, pPresetFile);
+		video_st = add_video_stream(oc, fmt->video_codec, width, height, frame_rate, bit_rate, gop_size, pPresetFile);
 		if(!video_st) {
 			ret = -3;
 			goto end;

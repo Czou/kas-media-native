@@ -5,6 +5,7 @@ package com.kurento.kas.media.tx;
  * Provides static methods that map native media functions.
  * 
  * </p>
+ * 
  * @author Miguel París Díaz
  * 
  */
@@ -12,13 +13,14 @@ public class MediaTx {
 
 	// VIDEO
 	private static native int initVideo(String outfile, int width, int height,
-			int frame_rate, int bit_rate, int codecId, int payload_type,
-			String presetFile);
+			int frame_rate, int bit_rate, int gop_size, int codecId,
+			int payload_type, String presetFile);
 
 	public static int initVideo(VideoInfoTx videoInfoTx) {
 		return initVideo(videoInfoTx.getOut(), videoInfoTx.getVideoProfile()
 				.getWidth(), videoInfoTx.getVideoProfile().getHeight(),
 				videoInfoTx.getVideoProfile().getFrameRate(), videoInfoTx
+						.getVideoProfile().getGopSize(), videoInfoTx
 						.getVideoProfile().getBitRate(), videoInfoTx
 						.getVideoProfile().getVideoCodecType().getCodecID(),
 				videoInfoTx.getPayloadType(), "");
