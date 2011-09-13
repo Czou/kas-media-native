@@ -20,8 +20,8 @@ public class MediaTx {
 		return initVideo(videoInfoTx.getOut(), videoInfoTx.getVideoProfile()
 				.getWidth(), videoInfoTx.getVideoProfile().getHeight(),
 				videoInfoTx.getVideoProfile().getFrameRate(), videoInfoTx
-						.getVideoProfile().getGopSize(), videoInfoTx
 						.getVideoProfile().getBitRate(), videoInfoTx
+						.getVideoProfile().getGopSize(), videoInfoTx
 						.getVideoProfile().getVideoCodecType().getCodecID(),
 				videoInfoTx.getPayloadType(), "");
 	}
