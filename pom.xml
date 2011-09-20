@@ -15,13 +15,13 @@
 			<id>mparis</id>
 			<name>Miguel París Díaz</name>
 			<email>mparisdiaz@gmail.com</email>
-			<organization>Urjc</organization>
+			<organization>Kurento</organization>
 		</developer>
 		<developer>
 			<id>rbenitez</id>
 			<name>Raúl Benítez Mejías</name>
 			<email>rbenitez@gsyc.es</email>
-			<organization>Urjc</organization>
+			<organization>Kurento</organization>
 		</developer>
 	</developers>
 
