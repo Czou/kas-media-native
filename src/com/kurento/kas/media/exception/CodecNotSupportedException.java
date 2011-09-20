@@ -2,7 +2,7 @@ package com.kurento.kas.media.exception;
 
 /**
  * 
- * @author Miguel París Díaz
+ * @author mparis
  * 
  */
 public class CodecNotSupportedException extends Exception {

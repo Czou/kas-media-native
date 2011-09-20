@@ -2,7 +2,7 @@ package com.kurento.kas.media.rx;
 
 /**
  * 
- * @author Miguel París Díaz
+ * @author mparis
  * 
  */
 public class MediaRx {

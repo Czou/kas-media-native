@@ -6,7 +6,7 @@ package com.kurento.kas.media.tx;
  * 
  * </p>
  * 
- * @author Miguel París Díaz
+ * @author mparis
  * 
  */
 public class MediaTx {

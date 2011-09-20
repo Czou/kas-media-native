@@ -6,7 +6,7 @@ import com.kurento.kas.media.exception.CodecNotSupportedException;
 
 /**
  * 
- * @author Miguel París Díaz
+ * @author mparis
  * 
  */
 public enum AudioCodecType {

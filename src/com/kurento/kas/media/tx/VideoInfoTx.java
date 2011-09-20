@@ -4,7 +4,7 @@ import com.kurento.kas.media.profiles.VideoProfile;
 
 /**
  * 
- * @author Miguel París Díaz
+ * @author mparis
  * 
  */
 public class VideoInfoTx {
