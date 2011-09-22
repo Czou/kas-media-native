@@ -30,7 +30,7 @@ AMR_LIB_LIB=$AMR_INSTALL_DIR/lib
 	--disable-amd3dnow --disable-amd3dnowext --disable-mmx --disable-mmx2 --disable-sse --disable-ssse3 \
 	--enable-version3 \
 	--enable-gpl \
-	--enable-nonfree \
+	--disable-nonfree \
 	--disable-stripping \
 	--disable-ffplay \
 	--disable-ffmpeg \
