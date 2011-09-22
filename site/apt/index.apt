@@ -1,0 +1,16 @@
+   ------
+   Kurento Android Media
+   ------
+   ------
+   Date
+   ------
+
+Kurento Android Media
+
+* Introduction
+
+	Kurento Android Media is a wrapper in Java of an Android Media Library implemented in C and 
+	based on FFmpeg.
+	
+	
+	

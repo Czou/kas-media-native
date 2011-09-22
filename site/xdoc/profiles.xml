@@ -12,50 +12,83 @@
 	</head>
 
 	<body>
-		<section name="Media profiles supported">
+		<section name="Media profiles">
 			<table>
-				<th>Media profile</th>
-				<th>Audio</th>
-				<th>Video</th>
+				<th>VIDEO PROFILES</th>
 				<tr>
-					<!-- Low quality row -->
-					<td>Low quality</td>
+					<th>Video Codec</th>
+					<th>Frame Size (pix)</th>
+					<th>Frame Rate (fps)</th>
+					<th>Bit Rate (kbps)</th>
+					<th>GOP Size</th>
+					<th>Max B-frames</th>
+				</tr>
+
+				<tr>
+					<td>H.263</td>
 					<td>
 						<ul>
-							<li>AMR</li>
-							<li>12,2 kbps</li>
-							<li>8000 Hz</li>
+							<li>Configurable</li>
+							<li>Default value: 352x288 (CIF)</li>
 						</ul>
 					</td>
 					<td>
 						<ul>
-							<li>h263p</li>
-							<li>320 kbps</li>
-							<li>CIF</li>
-							<li>15 fps</li>
+							<li>Configurable</li>
+							<li>Default value: 15</li>
+						</ul>
+					</td>
+					<td>
+						<ul>
+							<li>Configurable</li>
+							<li>Default value: 384</li>
+						</ul>
+					</td>
+					<td>
+						<ul>
+							<li>Configurable</li>
+							<li>Default value: 6</li>
+						</ul>
+					</td>
+					<td>
+						<ul>
+							<li>0 (only I and P frames)</li>
 						</ul>
 					</td>
 				</tr>
 
-				<!-- High quality row -->
-				<tr>
-					<td>High quality</td>
-					<td>
-						<ul>
-							<li>MP2</li>
-							<li>64 kbps</li>
-							<li>44100 Hz</li>
-						</ul>
-					</td>
-					<td>
-						<ul>
-							<li>mpeg4</li>
-							<li>1,5 Mbps</li>
-							<li>CIF</li>
-							<li>15 fps</li>
-						</ul>
-					</td>
 
+				<tr>
+					<td>MPEG-4</td>
+					<td>
+						<ul>
+							<li>Configurable</li>
+							<li>Default value: 352x288 (CIF)</li>
+						</ul>
+					</td>
+					<td>
+						<ul>
+							<li>Configurable</li>
+							<li>Default value: 15</li>
+						</ul>
+					</td>
+					<td>
+						<ul>
+							<li>Configurable</li>
+							<li>Default value: 1500</li>
+						</ul>
+					</td>
+					<td>
+						<ul>
+							<li>Configurable</li>
+							<li>Default value: 6</li>
+						</ul>
+					</td>
+					<td>
+						<ul>
+							<li>0 (only I and P frames)</li>
+						</ul>
+					</td>
 				</tr>
 			</table>
 

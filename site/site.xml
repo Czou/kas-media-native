@@ -1,23 +1,24 @@
-<?xml version="1.0" encoding="ISO-8859-1"?>
-<project name="Android Media Library">
-<!-- 	<bannerLeft> -->
-<!-- 		<name>Maven</name> -->
-<!-- 		<src>http://www.naevatec.com/naeva/images/naevatec/logo_naeva_185x100.png -->
-<!-- 		</src> -->
-<!-- 		<src>./images/logos/apache-maven-project.png</src> -->
-<!-- 		<href>http://maven.apache.org/</href> -->
-<!-- 	</bannerLeft> -->
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="Kurento Android Media">
+	<bannerLeft>
+		<name>Kurento Android Project</name>
+		<src>http://www.kurento.com/kurento/sites/all/themes/bartikplus/logo.png
+		</src>
+		<href>http://repository.kurento.com/site/kurento-android-docs/${project.version}
+		</href>
+	</bannerLeft>
 
 	<body>
 		<links>
 			<item name="FFmpeg" href="http://www.ffmpeg.org/" />
 		</links>
-		<menu name="Android Media Library">
-			<item name="Introduction" href="index.html" />
+		<menu name="Kurento Android Media">
+			<item name="Main" href="index.html" />
+			<item name="Codecs" href="codecs.html" />
 			<item name="Profiles" href="profiles.html" />
 		</menu>
-		
-		<menu ref="reports"/>
+
+		<menu ref="reports" />
 
 	</body>
 </project>
