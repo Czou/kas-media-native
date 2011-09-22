@@ -3,3 +3,6 @@
 libs/
 obj/
 target/
+.deps/
+*.pc
+*.d
