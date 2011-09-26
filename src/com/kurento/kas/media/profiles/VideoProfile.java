@@ -2,13 +2,13 @@ package com.kurento.kas.media.profiles;
 
 import com.kurento.kas.media.VideoCodecType;
 
-public enum VideoProfile {
-	H263(MediaQuality.LOW, VideoCodecType.H263, 384000, 15, 6, 352, 288,
-			"h263p CIF bit_rate=320000"),
-	MPEG4(MediaQuality.HEIGH, VideoCodecType.MPEG4, 1500000, 15, 6, 352, 288,
-			"mpeg4 CIF bit_rate=1500000");
+public class VideoProfile {
 
-	private MediaQuality mediaQuality;
+	public static final int DEFAULT_WIDTH = 352;
+	public static final int DEFAULT_HEIGHT = 288;
+	public static final int DEFAULT_FRAME_RATE = 15;
+	public static final int DEFAULT_GOP_SIZE = 6;
+
 	private VideoCodecType videoCodecType;
 	private int width;
 	private int height;
@@ -16,10 +16,6 @@ public enum VideoProfile {
 	private int bitRate;
 	private int gopSize;
 	private String description;
-
-	public MediaQuality getMediaQuality() {
-		return mediaQuality;
-	}
 
 	public VideoCodecType getVideoCodecType() {
 		return videoCodecType;
@@ -69,26 +65,35 @@ public enum VideoProfile {
 		this.gopSize = gopSize;
 	}
 
-	private VideoProfile(MediaQuality mediaQuality,
-			VideoCodecType videoCodecType, int bitRate, int frameRate,
-			int gopSize, int width, int height, String description) {
-		this.mediaQuality = mediaQuality;
+	/**
+	 * Contructor to asign default falues of:
+	 * <ul>
+	 * <li>width</li>
+	 * <li>height</li>
+	 * <li>frameRate</li>
+	 * <li>gopSize</li>
+	 * </ul>
+	 * 
+	 * @param videoCodecType
+	 * @param bitRate
+	 */
+	public VideoProfile(VideoCodecType videoCodecType, int bitRate) {
 		this.videoCodecType = videoCodecType;
+		this.width = DEFAULT_WIDTH;
+		this.height = DEFAULT_HEIGHT;
+		this.frameRate = DEFAULT_FRAME_RATE;
+		this.gopSize = DEFAULT_GOP_SIZE;
 		this.bitRate = bitRate;
-		this.frameRate = frameRate;
-		this.gopSize = gopSize;
-		this.width = width;
-		this.height = height;
-		this.description = description;
 	}
 
-	public static VideoProfile getVideoProfileFromVideoCodecType(
-			VideoCodecType videoCodecType) {
-		if (H263.videoCodecType.equals(videoCodecType))
-			return H263;
-		if (MPEG4.videoCodecType.equals(videoCodecType))
-			return MPEG4;
-
-		return null;
+	public VideoProfile(VideoCodecType videoCodecType, int width, int height,
+			int frameRate, int bitRate, int gopSize, String description) {
+		this.videoCodecType = videoCodecType;
+		this.width = width;
+		this.height = height;
+		this.frameRate = frameRate;
+		this.bitRate = bitRate;
+		this.gopSize = gopSize;
+		this.description = description;
 	}
 }
