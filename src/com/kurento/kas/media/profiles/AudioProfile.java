@@ -1,6 +1,6 @@
 package com.kurento.kas.media.profiles;
 
-import com.kurento.kas.media.AudioCodecType;
+import com.kurento.kas.media.codecs.AudioCodecType;
 
 public enum AudioProfile {
 	AMR(AudioCodecType.AMR, AudioCodecType.AMR.getSupportedBitRate(),

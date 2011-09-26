@@ -1,4 +1,4 @@
-package com.kurento.kas.media;
+package com.kurento.kas.media.ports;
 
 public class MediaPortManager {
 

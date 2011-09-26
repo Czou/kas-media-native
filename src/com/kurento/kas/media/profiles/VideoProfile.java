@@ -1,6 +1,6 @@
 package com.kurento.kas.media.profiles;
 
-import com.kurento.kas.media.VideoCodecType;
+import com.kurento.kas.media.codecs.VideoCodecType;
 
 public class VideoProfile {
 
