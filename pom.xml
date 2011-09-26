@@ -14,16 +14,38 @@
 		<developer>
 			<id>mparis</id>
 			<name>Miguel París Díaz</name>
-			<email>mparisdiaz@gmail.com</email>
-			<organization>Kurento</organization>
-		</developer>
-		<developer>
-			<id>rbenitez</id>
-			<name>Raúl Benítez Mejías</name>
-			<email>rbenitez@gsyc.es</email>
-			<organization>Kurento</organization>
 		</developer>
 	</developers>
+
+	<contributors>
+		<contributor>
+			<name>Javier López Fernández</name>
+		</contributor>
+		<contributor>
+			<name>José Antonio Santos Cadenas</name>
+		</contributor>
+		<contributor>
+			<name>Luis López Fernández</name>
+		</contributor>
+		<contributor>
+			<name>Raúl Benítez Mejías</name>
+		</contributor>
+		<contributor>
+			<name>Santiago Gala</name>
+		</contributor>
+	</contributors>
+
+	<mailingLists>
+		<mailingList>
+			<name>Kurento</name>
+			<subscribe>http://groups.google.com/group/kurento/subscribe</subscribe>
+			<post>http://groups.google.com/group/kurento/post</post>
+			<archive>http://groups.google.com/group/kurento/about</archive>
+		</mailingList>
+	</mailingLists>
+
+
+
 
 	<dependencies>
 		<dependency>
