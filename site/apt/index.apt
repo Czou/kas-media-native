@@ -12,5 +12,24 @@ Kurento Android Media
 	Kurento Android Media is a wrapper in Java of an Android Media Library implemented in C and 
 	based on FFmpeg.
 	
+
+
+* Abstract, simple and usable API
+	
+	
+	
+	
+	
+[./images/kas-media.png] kas-media API
+	
+	
+	
+* Features
+	
+	* Symmetrical connection
+	
+	* Frame size rescale
+	
+	* Symmetrical connection
 	
 	
