@@ -1,14 +1,20 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
+
 	<groupId>com.kurento.kas</groupId>
 	<artifactId>kas-media</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.0-RC-1</version>
 	<packaging>apklib</packaging>
 
-	<name>Android Media Library</name>
+	<name>Kurento Android Media</name>
 	<description>Android Media Library based on FFmpeg</description>
-	<url>http://repository.kurento.com/site/kas-media</url>
+	<url>http://repository.kurento.com/docs/kas-media</url>
+
+	<organization>
+		<name>Kurento</name>
+		<url>http://www.kurento.com</url>
+	</organization>
 
 	<developers>
 		<developer>
@@ -43,8 +49,6 @@
 			<archive>http://groups.google.com/group/kurento/about</archive>
 		</mailingList>
 	</mailingLists>
-
-
 
 
 	<dependencies>
@@ -154,8 +158,8 @@
 	</distributionManagement>
 
 	<scm>
-		<connection>scm:git:ssh://repository.kurento.com/git/kas-media</connection>
+		<connection>scm:http://kurento.googlecode.com</connection>
 		<developerConnection>scm:git:ssh://repository.kurento.com/git/kas-media</developerConnection>
-		<url>scm:git:ssh://repository.kurento.com/git/kas-media</url>
+		<url>https://repository.kurento.com/git/kurento-android-sdk/?p=kas-media</url>
 	</scm>
 </project>
