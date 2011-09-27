@@ -28,3 +28,4 @@ export LDFLAGS="-I$ARM_INC -L$ARM_LIBO -nostdlib -Bdynamic  -Wl,--no-undefined -
 
 ./configure --prefix=$INSTALL_DIR --host=arm
 
+make install

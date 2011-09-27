@@ -29,3 +29,4 @@ INSTALL_DIR=$PWD/../x264install
 	--disable-pthread \
 	--host=arm-linux \
 
+make install

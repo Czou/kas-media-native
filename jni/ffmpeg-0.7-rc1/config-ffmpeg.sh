@@ -18,14 +18,23 @@ ARM_LIB=$PLATFORM/usr/lib
 ARM_TOOL=$ANDROID_NDK_HOME/toolchains/$abi-$gccvers/prebuilt/linux-x86
 ARM_LIBO=$ARM_TOOL/lib/gcc/$abi/$gccvers
 
+X264_SRC=x264-0.106.1741
 X264_INSTALL_DIR=$PWD/x264install
 X264_LIB_INC=$X264_INSTALL_DIR/include
 X264_LIB_LIB=$X264_INSTALL_DIR/lib
+cd $X264_SRC
+echo "configure x264"
+./config-x264.sh
+cd ..
 
+AMR_SRC=opencore-amr-0.1.2
 AMR_INSTALL_DIR=$PWD/opencore-amr_install
 AMR_LIB_INC=$AMR_INSTALL_DIR/include
 AMR_LIB_LIB=$AMR_INSTALL_DIR/lib
-
+cd $AMR_SRC
+echo "configure opencore-amr"
+./config-amr.sh
+cd ..
 
 ./configure --target-os=linux \
 	--arch=arm \
