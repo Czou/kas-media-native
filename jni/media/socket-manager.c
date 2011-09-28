@@ -177,7 +177,7 @@ get_audio_connection()
 }
 
 jint
-Java_com_kurento_kas_media_MediaPortManager_takeAudioLocalPort (JNIEnv* env, jobject thiz)
+Java_com_kurento_kas_media_ports_MediaPortManager_takeAudioLocalPort (JNIEnv* env, jobject thiz)
 {
 	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "takeAudioLocalPort");
 	URLContext *urlContext = get_audio_connection();
@@ -185,7 +185,7 @@ Java_com_kurento_kas_media_MediaPortManager_takeAudioLocalPort (JNIEnv* env, job
 }
 
 void
-Java_com_kurento_kas_media_MediaPortManager_releaseAudioLocalPort (JNIEnv* env, jobject thiz)
+Java_com_kurento_kas_media_ports_MediaPortManager_releaseAudioLocalPort (JNIEnv* env, jobject thiz)
 {
 	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "releaseAudioLocalPort");
 	if (pAudioFormatCtx && pAudioFormatCtx->pb)
@@ -202,7 +202,7 @@ get_video_connection()
 }
 
 jint
-Java_com_kurento_kas_media_MediaPortManager_takeVideoLocalPort (JNIEnv* env, jobject thiz)
+Java_com_kurento_kas_media_ports_MediaPortManager_takeVideoLocalPort (JNIEnv* env, jobject thiz)
 {
 	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "takeVideoLocalPort");
 	URLContext *urlContext = get_video_connection();
@@ -210,7 +210,7 @@ Java_com_kurento_kas_media_MediaPortManager_takeVideoLocalPort (JNIEnv* env, job
 }
 
 void
-Java_com_kurento_kas_media_MediaPortManager_releaseVideoLocalPort (JNIEnv* env, jobject thiz)
+Java_com_kurento_kas_media_ports_MediaPortManager_releaseVideoLocalPort (JNIEnv* env, jobject thiz)
 {
 	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "releaseVideoLocalPort");
 	if (pVideoFormatCtx && pVideoFormatCtx->pb)
