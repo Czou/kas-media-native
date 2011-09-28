@@ -15,7 +15,6 @@
 #include "libswscale/swscale.h"
 #include "libavcodec/opt.h"
 #include "libavformat/rtpenc.h"
-#include <x264.h>
 
 /*
 	see	libavformat/output-example.c

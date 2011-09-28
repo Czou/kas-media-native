@@ -18,14 +18,30 @@ ARM_LIB=$PLATFORM/usr/lib
 ARM_TOOL=$ANDROID_NDK_HOME/toolchains/$abi-$gccvers/prebuilt/linux-x86
 ARM_LIBO=$ARM_TOOL/lib/gcc/$abi/$gccvers
 
-X264_SRC=x264-0.106.1741
-X264_INSTALL_DIR=$PWD/x264install
-X264_LIB_INC=$X264_INSTALL_DIR/include
-X264_LIB_LIB=$X264_INSTALL_DIR/lib
-cd $X264_SRC
-echo "configure x264"
-./config-x264.sh
-cd ..
+#export USE_X264_TREE=x264-0.106.1741
+if [ "" == "$USE_X264_TREE" ]; then
+  echo "sin x264=$USE_X264_TREE"
+  export X264_LIB_INC=;
+  export X264_LIB_LIB=;
+  export X264_C_EXTRA=;
+  export X264_LD_EXTRA=;
+  export X264_L=;
+  export X264_CONFIGURE_OPTS='--disable-gpl --disable-libx264';
+else
+  echo "con x264=$USE_X264_TREE"
+  export X264_SRC=$USE_X264_TREE;
+  export X264_INSTALL_DIR=$PWD/x264install;
+  export X264_LIB_INC=$X264_INSTALL_DIR/include;
+  export X264_LIB_LIB=$X264_INSTALL_DIR/lib;
+  export X264_C_EXTRA="-I$X264_LIB_INC";
+  export X264_LD_EXTRA="-L$X264_LIB_LIB -rpath-link=$X264_LIB_LIB";
+  export X264_L=-lx264;
+  cd $X264_SRC;
+  echo "configure x264";
+  ./config-x264.sh || exit -1;
+  cd ..;
+  export X264_CONFIGURE_OPTS='--enable-gpl --enable-libx264';
+fi
 
 AMR_SRC=opencore-amr-0.1.2
 AMR_INSTALL_DIR=$PWD/opencore-amr_install
@@ -33,7 +49,7 @@ AMR_LIB_INC=$AMR_INSTALL_DIR/include
 AMR_LIB_LIB=$AMR_INSTALL_DIR/lib
 cd $AMR_SRC
 echo "configure opencore-amr"
-./config-amr.sh
+./config-amr.sh || exit -1
 cd ..
 
 ./configure --target-os=linux \
@@ -48,7 +64,6 @@ cd ..
 	--disable-asm --disable-yasm --enable-neon --enable-pic \
 	--disable-amd3dnow --disable-amd3dnowext --disable-mmx --disable-mmx2 --disable-sse --disable-ssse3 \
 	--enable-version3 \
-	--enable-gpl \
 	--disable-nonfree \
 	--disable-stripping \
 	--disable-ffplay \
@@ -58,12 +73,11 @@ cd ..
 	--disable-avdevice \
 	--disable-avfilter \
 	--disable-devices \
-	--enable-libx264 \
-	--enable-libopencore-amrnb \
 	--extra-cflags="-fPIC -DANDROID " \
-	--extra-cflags="-I$ARM_INC -I$X264_LIB_INC -I$AMR_LIB_INC " \
+	--extra-cflags="-I$ARM_INC -I$AMR_LIB_INC $X264_C_EXTRA " \
 	--extra-cflags="-fpic -mthumb-interwork -ffunction-sections -funwind-tables -fstack-protector -fno-short-enums -D__ARM_ARCH_5__ -D__ARM_ARCH_5T__ -D__ARM_ARCH_5E__ -D__ARM_ARCH_5TE__  -Wno-psabi -march=armv5te -mtune=xscale -msoft-float -mthumb -Os -fomit-frame-pointer -fno-strict-aliasing -finline-limit=64 -DANDROID  -Wa,--noexecstack -MMD -MP " \
 	--extra-ldflags=" -Wl,-T,$ARM_TOOL/$abi/lib/ldscripts/$armelf -Wl,-rpath-link=$ARM_LIB -L$ARM_LIB -nostdlib $ARM_TOOL/lib/gcc/$abi/$gccvers/crtbegin.o $ARM_LIBO/crtend.o -lc -lm -ldl " \
-	--extra-ldflags="-L$ARM_LIBO -L$X264_LIB_LIB -L$AMR_LIB_LIB -Wl,-rpath-link=$X264_LIB_LIB -nostdlib -Bdynamic  -Wl,--no-undefined -Wl,-z,noexecstack  -Wl,-z,nocopyreloc -Wl,-soname,/system/lib/libz.so -Wl,-rpath-link=$ARM_LIB,-dynamic-linker=/system/bin/linker -L$ARM_LIB -nostdlib $ARM_LIB/crtbegin_dynamic.o $ARM_LIB/crtend_android.o " \
-	--extra-libs="-lx264 -lgcc -lopencore-amrnb "
-	
+	--extra-ldflags="-L$ARM_LIBO $X264_LD_EXTRA -L$AMR_LIB_LIB -Wl,-nostdlib -Bdynamic  -Wl,--no-undefined -Wl,-z,noexecstack  -Wl,-z,nocopyreloc -Wl,-soname,/system/lib/libz.so -Wl,-rpath-link=$ARM_LIB,-dynamic-linker=/system/bin/linker -L$ARM_LIB -nostdlib $ARM_LIB/crtbegin_dynamic.o $ARM_LIB/crtend_android.o " \
+	--extra-libs="$X264_L -lgcc -lopencore-amrnb " $X264_CONFIGURE_OPTS --enable-libopencore-amrnb \
+
+
