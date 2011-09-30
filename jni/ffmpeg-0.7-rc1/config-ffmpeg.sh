@@ -6,6 +6,29 @@ if [ "" == "$ANDROID_NDK_HOME" ]; then
   exit 1;
 fi
 
+MARK_FILE=config.mark
+
+#Check if must run
+if [ -f $MARK_FILE ]
+then
+  OLD_USE_X264_TREE=`grep USE_X264_TREE $MARK_FILE | sed -e "s/USE\_X264\_TREE=//"`
+  OLD_ANDROID_NDK_HOME=`grep ANDROID_NDK_HOME $MARK_FILE | sed -e "s/ANDROID\_NDK\_HOME=//"`
+  echo "OLD_USE_X264_TREE=$OLD_USE_X264_TREE"
+  echo "OLD_ANDROID_NDK_HOME=$OLD_ANDROID_NDK_HOME"
+else
+  OLD_USE_X264_TREE=""
+  OLD_ANDROID_NDK_HOME=""
+fi
+
+if [[ "$OLD_USE_X264_TREE" = "$USE_X264_TREE" && "$OLD_ANDROID_NDK_HOME" = "$ANDROID_NDK_HOME" ]]
+then
+  echo "No need to run config again, exiting..."
+  exit 0;
+fi
+
+echo "ANDROID_NDK_HOME=$ANDROID_NDK_HOME" > $MARK_FILE
+echo "USE_X264_TREE=$USE_X264_TREE" >> $MARK_FILE
+
 # For Android NDK r5 and 6 (at least), 4.4.3 is used
 export armelf=armelf_linux_eabi.x;
 export abi=arm-linux-androideabi;

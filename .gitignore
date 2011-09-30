@@ -16,3 +16,4 @@ jni/ffmpeg-0.7-rc1/config.mak
 jni/ffmpeg-0.7-rc1/opencore-amr_install/
 jni/ffmpeg-0.7-rc1/x264install/
 .libs
+jni/ffmpeg-0.7-rc1/config.mark
