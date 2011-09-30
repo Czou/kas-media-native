@@ -26,10 +26,17 @@ Kurento Android Media
 	
 * Features
 	
-	* Symmetrical connection
+	* RTP support: Kurento Android Media supports RTP media transmission and reception. 
 	
-	* Frame size rescale
+	* H.263 support: Kurento Android Media supports H.263 encoded video on both transmission and reception
 	
-	* Symmetrical connection
+	* Mpeg4 support: Kurento Android Media supports Mpeg4 encoded video on both transmission and reception 
 	
+	* AMR support: Kurento Android Media supports Mpeg4 encoded audio on both transmission and reception
+	
+	* Symmetric connection: Reception and transmission streams of a call (for each media type) uses the same port.
+	
+	* Frame size rescale: Capability to modify video dimensions while media is relayed between the In/Out devices 
+	and the network connection
+		
 	
