@@ -2,7 +2,7 @@
 <project name="Kurento Android Media">
 	<bannerLeft>
 		<name>Kurento Project</name>
-		<src>http://www.kurento.com/kurento/sites/all/themes/bartikplus/logo.png
+		<src>http://www.kurento.com/sites/all/themes/bartikplus/logo.png
 		</src>
 		<href>http://www.kurento.com</href>
 	</bannerLeft>
