@@ -215,7 +215,7 @@ Java_com_kurento_kas_media_tx_MediaTx_initAudio (JNIEnv* env,
 		goto end;
 	}
 	
-	urlContext = get_audio_connection();
+	urlContext = get_audio_connection(0);
 	if ((ret = rtp_set_remote_url (urlContext, pOutFile)) < 0) {
 		snprintf(buf, sizeof(buf), "Could not open '%s'", pOutFile);
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);

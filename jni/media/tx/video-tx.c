@@ -375,7 +375,7 @@ Java_com_kurento_kas_media_tx_MediaTx_initVideo(JNIEnv* env,
 		goto end;
 	}
 	
-	urlContext = get_video_connection();
+	urlContext = get_video_connection(0);
 	if ((ret=rtp_set_remote_url (urlContext, pOutFile)) < 0) {
 		snprintf(buf, sizeof(buf), "Could not open '%s' AVERROR_NOENT:%d", pOutFile, AVERROR_NOENT);
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
