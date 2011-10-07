@@ -9,7 +9,7 @@
 
 	<name>Kurento Android Media</name>
 	<description>Android Media Library based on FFmpeg</description>
-	<url>http://repository.kurento.com/docs/kas-media</url>
+	<url>http://www.kurento.com/docs/kas-media</url>
 
 	<organization>
 		<name>Kurento</name>
@@ -93,12 +93,22 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-site-plugin</artifactId>
-				<version>2.3</version>
+				<version>3.0</version>
 				<configuration>
+					<locales>en</locales>
+					<encoding>UTF-8</encoding>
 					<siteDirectory>${basedir}/site</siteDirectory>
 					<tempWebappDirectory>${basedir}/target/site</tempWebappDirectory>
 				</configuration>
+				<dependencies>
+					<dependency>
+						<groupId>org.apache.maven.wagon</groupId>
+						<artifactId>wagon-ssh</artifactId>
+						<version>1.0-beta-7</version>
+					</dependency>
+				</dependencies>
 			</plugin>
+
 		</plugins>
 	</build>
 
@@ -162,4 +172,13 @@
 		<developerConnection>scm:git:ssh://repository.kurento.com/git/kas-media</developerConnection>
 		<url>https://repository.kurento.com/git/kurento-android-sdk/?p=kas-media</url>
 	</scm>
+
+	<licenses>
+		<license>
+			<name>Kurento Android SDK License</name>
+			<url>http://www.kurento.com/docs/kurento-android-docs/license.html</url>
+			<distribution>repo</distribution>
+			<comments>Commercial license for Kurento Android SDK</comments>
+		</license>
+	</licenses>
 </project>

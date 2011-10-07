@@ -2,7 +2,7 @@
 <project name="Kurento Android Media">
 	<bannerLeft>
 		<name>Kurento Project</name>
-		<src>http://www.kurento.com/kurento/sites/all/themes/bartikplus/logo.png
+		<src>http://www.kurento.com/sites/all/themes/bartikplus/logo.png
 		</src>
 		<href>http://www.kurento.com</href>
 	</bannerLeft>
@@ -11,11 +11,10 @@
 		<links>
 			<item name="FFmpeg" href="http://www.ffmpeg.org/" />
 		</links>
-		<menu name="Kurento Android Media">
-			<item name="Main" href="index.html" />
-			<item name="Codecs" href="codecs.html" />
-			<item name="Profiles" href="profiles.html" />
-		</menu>
+<!--		<menu name="Kurento Android Media">-->
+<!--			<item name="Codecs" href="codecs.html" />-->
+<!--			<item name="Profiles" href="profiles.html" />-->
+<!--		</menu>-->
 		<menu ref="reports" />
 	</body>
 </project>

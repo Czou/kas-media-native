@@ -1,3 +1,20 @@
+/*
+ * Kurento Android Media: Android Media Library based on FFmpeg.
+ * Copyright (C) 2011  Tikal Technologies
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 3
+ * as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 /**
  * 
  * @author Miguel París Díaz
@@ -15,7 +32,6 @@
 #include "libswscale/swscale.h"
 #include "libavcodec/opt.h"
 #include "libavformat/rtpenc.h"
-#include <x264.h>
 
 /*
 	see	libavformat/output-example.c
@@ -277,7 +293,18 @@ Java_com_kurento_kas_media_tx_MediaTx_initVideo(JNIEnv* env,
 	
 	pthread_mutex_lock(&mutex);
 	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "Entro en initVideo");
-	
+
+
+#ifndef USE_X264_TREE
+	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "USE_X264_TREE no def");
+	/* TODO: Improve this hack to disable H264 */
+	if (VIDEO_CODECS[codecId] == CODEC_ID_H264) {
+		__android_log_write(ANDROID_LOG_WARN, LOG_TAG, "H264 not supported");
+		ret = -1;
+		goto end;
+	}
+#endif
+
 	pOutFile = (*env)->GetStringUTFChars(env, outfile, NULL);
 	if (pOutFile == NULL) {
     		ret = -1; // OutOfMemoryError already thrown
