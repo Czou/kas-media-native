@@ -26,17 +26,25 @@ Kurento Android Media
 	
 * Features
 	
-	* RTP support: Kurento Android Media supports RTP media transmission and reception. 
+	* Supports AMR and MP2 audio.
 	
-	* H.263 support: Kurento Android Media supports H.263 encoded video on both transmission and reception
+	* Supports H.263 and MP4 video codecs.
 	
-	* Mpeg4 support: Kurento Android Media supports Mpeg4 encoded video on both transmission and reception 
+	* Provides RTP transmission and reception capabilities for all supported codecs.
+	RTP stack implementation enables symmetric connection.	
 	
-	* AMR support: Kurento Android Media supports Mpeg4 encoded audio on both transmission and reception
+	* Configurable media profile: Frame rate, bit rate.
 	
-	* Symmetric connection: Reception and transmission streams of a call (for each media type) uses the same port.
+	* Configurable codec profile: Group of pictures. 
 	
-	* Frame size rescale: Capability to modify video dimensions while media is relayed between the In/Out devices 
-	and the network connection
+	* Supports CIF video. Media core performs a frame rescale to modify video dimensions 
+	from camera output format to CIF. This release does not support FRAME_SIZE parameter
+	
+	* Video bandwidth is limited depending on active network interface. kas-media allows a
+	maximum bandwidth of 350 kbps for 3G connection and 1500 kbps for WiFi connection.
+		
+	* Jitter adaptation buffer: KAS is designed for minimum latency and this decreases jitter
+	tolerance. A low pass jitter adaptation filter has been implemented to optimize video
+	continuity with minimun latency.
 		
 	
