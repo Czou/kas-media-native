@@ -41,6 +41,16 @@ ARM_LIB=$PLATFORM/usr/lib
 ARM_TOOL=$ANDROID_NDK_HOME/toolchains/$abi-$gccvers/prebuilt/linux-x86
 ARM_LIBO=$ARM_TOOL/lib/gcc/$abi/$gccvers
 
+export NEON_FLAGS="--enable-armv5te --enable-armv6 --enable-armv6t2 --enable-armvfp"
+export MARCH="armv5te"
+if [ "true" == "${USE_NEON}" ]
+then
+   NEON_FLAGS="${NEON_FLAGS} --enable-neon"
+   MARCH="armv7-a -mfpu=neon"
+fi
+
+
+
 #export USE_X264_TREE=x264-0.106.1741
 if [ "" == "$USE_X264_TREE" ]; then
   echo "sin x264=$USE_X264_TREE"
@@ -53,7 +63,7 @@ if [ "" == "$USE_X264_TREE" ]; then
 else
   echo "con x264=$USE_X264_TREE"
   export X264_SRC=$USE_X264_TREE;
-  export X264_INSTALL_DIR=$PWD/x264install;
+  export X264_INSTALL_DIR=$PWD/x264_${TARGET_ARCH_ABI}_install;
   export X264_LIB_INC=$X264_INSTALL_DIR/include;
   export X264_LIB_LIB=$X264_INSTALL_DIR/lib;
   export X264_C_EXTRA="-I$X264_LIB_INC";
@@ -67,13 +77,17 @@ else
 fi
 
 AMR_SRC=opencore-amr-0.1.2
-AMR_INSTALL_DIR=$PWD/opencore-amr_install
+AMR_INSTALL_DIR=$PWD/opencore-amr_${TARGET_ARCH_ABI}_install
 AMR_LIB_INC=$AMR_INSTALL_DIR/include
 AMR_LIB_LIB=$AMR_INSTALL_DIR/lib
-cd $AMR_SRC
-echo "configure opencore-amr"
-./config-amr.sh || exit -1
-cd ..
+if  [ ! -d "$ARM_INSTALL_DIR" ]
+then
+   cd $AMR_SRC
+   echo "configure opencore-amr for target ${TARGET_ARCH_ABI}"
+   export TARGET_ARCH_ABI
+   ./config-amr.sh || exit -1
+   cd ..
+fi
 
 ./configure --target-os=linux \
 	--arch=arm \
@@ -83,8 +97,8 @@ cd ..
 	--nm=$ARM_TOOL/bin/$abi-nm \
 	--enable-static \
 	--disable-shared \
-	--enable-armv5te --enable-armv6 --enable-armv6t2 --enable-armvfp \
-	--disable-asm --disable-yasm --enable-neon --enable-pic \
+	${NEON_FLAGS} \
+	--disable-asm --disable-yasm --enable-pic \
 	--disable-amd3dnow --disable-amd3dnowext --disable-mmx --disable-mmx2 --disable-sse --disable-ssse3 \
 	--enable-version3 \
 	--disable-nonfree \
@@ -98,9 +112,10 @@ cd ..
 	--disable-devices \
 	--extra-cflags="-fPIC -DANDROID " \
 	--extra-cflags="-I$ARM_INC -I$AMR_LIB_INC $X264_C_EXTRA " \
-	--extra-cflags="-fpic -mthumb-interwork -ffunction-sections -funwind-tables -fstack-protector -fno-short-enums -D__ARM_ARCH_5__ -D__ARM_ARCH_5T__ -D__ARM_ARCH_5E__ -D__ARM_ARCH_5TE__  -Wno-psabi -march=armv5te -mtune=xscale -msoft-float -mthumb -Os -fomit-frame-pointer -fno-strict-aliasing -finline-limit=64 -DANDROID  -Wa,--noexecstack -MMD -MP " \
+	--extra-cflags="-fpic -mthumb-interwork -ffunction-sections -funwind-tables -fstack-protector -fno-short-enums -D__ARM_ARCH_5__ -D__ARM_ARCH_5T__ -D__ARM_ARCH_5E__ -D__ARM_ARCH_5TE__  -Wno-psabi -march=${MARCH} -mtune=xscale -msoft-float -mthumb -Os -fomit-frame-pointer -fno-strict-aliasing -finline-limit=64 -DANDROID  -Wa,--noexecstack -MMD -MP " \
 	--extra-ldflags=" -Wl,-T,$ARM_TOOL/$abi/lib/ldscripts/$armelf -Wl,-rpath-link=$ARM_LIB -L$ARM_LIB -nostdlib $ARM_TOOL/lib/gcc/$abi/$gccvers/crtbegin.o $ARM_LIBO/crtend.o -lc -lm -ldl " \
 	--extra-ldflags="-L$ARM_LIBO $X264_LD_EXTRA -L$AMR_LIB_LIB -Wl,-nostdlib -Bdynamic  -Wl,--no-undefined -Wl,-z,noexecstack  -Wl,-z,nocopyreloc -Wl,-soname,/system/lib/libz.so -Wl,-rpath-link=$ARM_LIB,-dynamic-linker=/system/bin/linker -L$ARM_LIB -nostdlib $ARM_LIB/crtbegin_dynamic.o $ARM_LIB/crtend_android.o " \
 	--extra-libs="$X264_L -lgcc -lopencore-amrnb " $X264_CONFIGURE_OPTS --enable-libopencore-amrnb \
 
+exit 0
 
