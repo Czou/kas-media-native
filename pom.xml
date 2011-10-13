@@ -11,6 +11,11 @@
 	<description>Android Media Library based on FFmpeg</description>
 	<url>http://www.kurento.com/docs/kas-media/${project.version}</url>
 
+	<properties>
+		<project.build.sourceEncoding>UTF-8 </project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+	</properties>
+
 	<organization>
 		<name>Kurento</name>
 		<url>http://www.kurento.com</url>
