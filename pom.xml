@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>com.kurento.kas</groupId>
-	<artifactId>kas-media</artifactId>
+	<artifactId>kas-media-native</artifactId>
 	<version>1.1.0-SNAPSHOT</version>
 	<packaging>apklib</packaging>
 
