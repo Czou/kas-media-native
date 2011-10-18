@@ -186,7 +186,8 @@ static int opt_preset(const char *preset_file)
  * add a video output stream
  * see new_video_stream in ffmpeg.c
  */
-static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id, int width, int height, int frame_rate, int bit_rate, int gop_size, const char *preset_file)
+static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id, int width, int height,
+				int frame_rate_num, int frame_rate_den, int bit_rate, int gop_size, const char *preset_file)
 {
 	AVCodecContext *c;
 	AVStream *st;
@@ -213,8 +214,8 @@ static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id, in
 	of which frame timestamps are represented. for fixed-fps content,
 	timebase should be 1/framerate and timestamp increments should be
 	identically 1. */
-	c->time_base.den = frame_rate;	//15;
-	c->time_base.num = 1;
+	c->time_base.den = frame_rate_num;	//15;
+	c->time_base.num = frame_rate_den;
 	c->gop_size = gop_size;//12; /* emit one intra frame every twelve frames at most */
 	c->max_b_frames=0;
 	c->pix_fmt = PIX_FMT_YUV420P;
@@ -283,7 +284,8 @@ pCodecCtx->rc_min_rate = 1000000;
 jint
 Java_com_kurento_kas_media_tx_MediaTx_initVideo(JNIEnv* env,
 			jobject thiz,
-			jstring outfile, jint width, jint height, jint frame_rate, jint bit_rate, jint gop_size, jint codecId, jint payload_type, jstring presetFile)
+			jstring outfile, jint width, jint height, jint frame_rate_num, jint frame_rate_den,
+			jint bit_rate, jint gop_size, jint codecId, jint payload_type, jstring presetFile)
 {
 	int i, ret;
 	
@@ -359,7 +361,7 @@ Java_com_kurento_kas_media_tx_MediaTx_initVideo(JNIEnv* env,
 	video_st = NULL;
 	
 	if (fmt->video_codec != CODEC_ID_NONE) {
-		video_st = add_video_stream(oc, fmt->video_codec, width, height, frame_rate, bit_rate, gop_size, pPresetFile);
+		video_st = add_video_stream(oc, fmt->video_codec, width, height, frame_rate_num, frame_rate_den, bit_rate, gop_size, pPresetFile);
 		if(!video_st) {
 			ret = -3;
 			goto end;
