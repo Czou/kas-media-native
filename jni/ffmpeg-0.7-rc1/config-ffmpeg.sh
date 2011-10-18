@@ -3,7 +3,7 @@
 # ensure ANDROID_NDK_HOME is set
 if [ "" == "$ANDROID_NDK_HOME" ]; then
   echo "Please set ANDROID_NDK_HOME to your Android Native Development Kit path.";
-  exit 1;
+  exit -1;
 fi
 
 if [ "" == "$MY_FFMPEG_INSTALL" ]; then
