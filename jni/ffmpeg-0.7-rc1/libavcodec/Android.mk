@@ -6,9 +6,9 @@ LOCAL_C_INCLUDES :=		\
 	$(LOCAL_PATH)		\
 	$(LOCAL_PATH)/..	\
 	$(LOCAL_PATH)/../x264install/include	\
-	$(LOCAL_PATH)/../opencore-amr_install/include
+	$(MY_AMR_INSTALL)/include
 LOCAL_CFLAGS += $(FFCFLAGS)
-LOCAL_LDLIBS := -lz -L$(LOCAL_PATH)/../opencore-amr_install/lib -lopencore-amrnb
+LOCAL_LDLIBS := -lz -L$(MY_AMR_INSTALL)/lib -lopencore-amrnb
 LOCAL_STATIC_LIBRARIES := $(FFLIBS)
 LOCAL_MODULE := $(FFNAME)
 include $(BUILD_STATIC_LIBRARY)

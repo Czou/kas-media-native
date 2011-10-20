@@ -1,10 +1,13 @@
 TOP_LOCAL_PATH := $(call my-dir)
 
-include $(call all-subdir-makefiles)
-
 export MY_FFMPEG_SOURCE := $(NDK_PROJECT_PATH)/jni/ffmpeg-0.7-rc1
 export MY_FFMPEG_INSTALL := $(MY_FFMPEG_SOURCE)
+export MY_AMR_SOURCE := $(MY_FFMPEG_SOURCE)/opencore-amr-0.1.2
+export MY_AMR_INSTALL := $(MY_FFMPEG_INSTALL)/opencore-amr_install
+
 RESULT:= $(shell cd $(MY_FFMPEG_SOURCE) && ./config-ffmpeg.sh)
+
+include $(call all-subdir-makefiles)
 
 LOCAL_PATH := $(TOP_LOCAL_PATH)
 ifdef USE_X264_TREE
@@ -18,13 +21,13 @@ include $(CLEAR_VARS)
 
 LOCAL_C_INCLUDES := 	$(MY_FFMPEG_INSTALL)	\
 			$(LOCAL_X264_C_INCLUDE)	\
-			$(MY_FFMPEG_INSTALL)/opencore-amr_install/include	\
+			$(MY_AMR_INSTALL)/include	\
 			$(LOCAL_PATH)/media	\
 			$(LOCAL_PATH)/media/rx
 
 LOCAL_STATIC_LIBRARIES := libavformat libavcodec libavutil libpostproc libswscale 
 LOCAL_LDLIBS :=	-llog $(LOCAL_X264_LDLIB)	\
-		-L$(MY_FFMPEG_INSTALL)/opencore-amr_install/lib		\
+		-L$(MY_AMR_INSTALL)/lib		\
 		-lc -lm -ldl -lgcc -lz -lopencore-amrnb
 
 LOCAL_MODULE := android-media
