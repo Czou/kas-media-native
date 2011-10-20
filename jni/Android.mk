@@ -10,6 +10,8 @@ RESULT:= $(shell cd $(MY_FFMPEG_SOURCE) && ./config-ffmpeg.sh)
 include $(call all-subdir-makefiles)
 
 LOCAL_PATH := $(TOP_LOCAL_PATH)
+
+export MY_X264_C_INCLUDE MY_X264_INSTALL
 ifdef USE_X264_TREE
     $(info "GPL version, with H264 encoding support")
     MY_X264_INSTALL := $(MY_FFMPEG_INSTALL)/x264_${TARGET_ARCH_ABI}_install
@@ -20,7 +22,7 @@ endif
 include $(CLEAR_VARS)
 
 LOCAL_C_INCLUDES := 	$(MY_FFMPEG_INSTALL)	\
-			$(LOCAL_X264_C_INCLUDE)	\
+			$(MY_X264_C_INCLUDE)	\
 			$(MY_AMR_INSTALL)/include	\
 			$(LOCAL_PATH)/media	\
 			$(LOCAL_PATH)/media/rx
