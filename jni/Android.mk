@@ -5,7 +5,6 @@ export MY_FFMPEG_INSTALL := $(MY_FFMPEG_SOURCE)
 export MY_AMR_SOURCE := $(MY_FFMPEG_SOURCE)/opencore-amr-0.1.2
 export MY_AMR_INSTALL := $(MY_FFMPEG_INSTALL)/opencore-amr_install
 
-RESULT:= $(shell cd $(MY_FFMPEG_SOURCE) && ./config-ffmpeg.sh)
 
 include $(call all-subdir-makefiles)
 
@@ -36,6 +35,11 @@ LOCAL_MODULE := android-media
 LOCAL_SRC_FILES :=	media/my-cmdutils.c media/init-media.c media/socket-manager.c	\
 			media/tx/video-tx.c media/tx/audio-tx.c		\
 			media/rx/sdp-manager.c media/rx/video-rx.c media/rx/audio-rx.c
+
+%/config.mak: force
+	cd $(MY_FFMPEG_SOURCE) && $(MY_FFMPEG_SOURCE)/config-ffmpeg.sh
+
+force: ;
 			
 
 include $(BUILD_SHARED_LIBRARY)
