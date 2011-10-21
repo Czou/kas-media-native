@@ -7,9 +7,9 @@
 	<version>1.1.0-SNAPSHOT</version>
 	<packaging>so</packaging>
 
-	<name>Kurento Android Media</name>
-	<description>Android Media Library based on FFmpeg</description>
-	<url>http://www.kurento.com/docs/kas-media/${project.version}</url>
+	<name>Kurento Android Media Native</name>
+	<description>Android Media Native Library based on FFmpeg</description>
+	<url>http://www.kurento.com/docs/kas-media-native/${project.version}</url>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8 </project.build.sourceEncoding>
@@ -162,7 +162,7 @@
 	<distributionManagement>
 		<site>
 			<id>maven-site</id>
-			<url>scp://repository.kurento.com/var/www/kurento/site/kas-media/${project.version}</url>
+			<url>scp://repository.kurento.com/var/www/kurento/site/kas-media-native/${project.version}</url>
 		</site>
 		<repository>
 			<id>releases</id>
