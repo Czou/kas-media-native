@@ -221,7 +221,7 @@ static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id, in
 	c->pix_fmt = PIX_FMT_YUV420P;
 //	c->pix_fmt = PIX_FMT_NV21;
 
-	c->rc_buffer_size = c->bit_rate*(int64_t)c->time_base.num;
+	c->rc_buffer_size = INT_MAX;	//((c->bit_rate * (int64_t)c->time_base.num) / (int64_t)c->time_base.den) + 1;
 
 snprintf(buf, sizeof(buf), "bit_rate: %d", c->bit_rate);
 __android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
