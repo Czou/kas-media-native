@@ -58,9 +58,9 @@ Java_com_kurento_kas_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 	
 	const char *pSdpString = NULL;
 
-	AVFormatContext *pFormatCtx;
-	AVCodecContext *pDecodecCtxVideo;
-	AVCodec *pDecodecVideo;
+	AVFormatContext *pFormatCtx = NULL;
+	AVCodecContext *pDecodecCtxVideo = NULL;
+	AVCodec *pDecodecVideo = NULL;
 	AVFrame *pFrame, *pFrameRGB;
 	
 	AVPacket avpkt;
@@ -74,38 +74,52 @@ Java_com_kurento_kas_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 	struct SwsContext *img_convert_ctx;
 	
 	
-
-	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "Entro en startVideoRx");
-
 	pSdpString = (*env)->GetStringUTFChars(env, sdp_str, NULL);
-	if (pSdpString == NULL)
-		return -1; // OutOfMemoryError already thrown
+	if (pSdpString == NULL) {
+		ret = -1; // OutOfMemoryError already thrown
+		goto end;
+	}
 
 	snprintf(buf, sizeof(buf), "pSdpString: %s", pSdpString);
 	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 
 	if( (ret= init_media()) != 0) {
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Couldn't init media");
-		return ret;
+		goto end;
 	}
 
-	// Open video file
-	if ( (ret = av_open_input_sdp(&pFormatCtx, pSdpString, NULL)) != 0 ) {
-		snprintf(buf, sizeof(buf), "Couldn't process sdp: %d", ret);
-		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
-		av_strerror(ret, buf, sizeof(buf));
-		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
-		return -2;
-	}
+	pthread_mutex_lock(&mutex);
+	receive = 1;
+	pthread_mutex_unlock(&mutex);
+	for(;;) {
+		pthread_mutex_lock(&mutex);
+		if (!receive) {
+			pthread_mutex_unlock(&mutex);
+			goto end;
+		}
+		pthread_mutex_unlock(&mutex);
+
+		// Open video file
+		if ( (ret = av_open_input_sdp(&pFormatCtx, pSdpString, NULL)) != 0 ) {
+			snprintf(buf, sizeof(buf), "Couldn't process sdp: %d", ret);
+			__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
+			av_strerror(ret, buf, sizeof(buf));
+			__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
+			ret = -2;
+			goto end;
+		}
 	
-	// Retrieve stream information
-	if ( (ret = av_find_stream_info(pFormatCtx)) < 0) {
-		snprintf(buf, sizeof(buf), "Couldn't find stream information: %d", ret);
-		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
-		close_context(pFormatCtx);
-		return -3;
+		// Retrieve stream information
+		if ( (ret = av_find_stream_info(pFormatCtx)) < 0) {
+			av_strerror(ret, buf, sizeof(buf));
+			snprintf(buf, sizeof(buf), "Couldn't find stream information: %s", buf);
+			__android_log_write(ANDROID_LOG_WARN, LOG_TAG, buf);
+			close_context(pFormatCtx);
+		} else
+			break;
 	}
-	
+
+
 	// Find the first video stream
 	videoStream = -1;
 	for (i = 0; i < pFormatCtx->nb_streams; i++)
@@ -115,10 +129,9 @@ Java_com_kurento_kas_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 		}
 	if (videoStream == -1) {
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Didn't find a video stream");
-		return -4;
+		ret = -4;
+		goto end;
 	}
-	
-	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "Get Streams");
 
 	// Get a pointer to the codec context for the video stream
 	pDecodecCtxVideo = pFormatCtx->streams[videoStream]->codec;
@@ -127,13 +140,15 @@ Java_com_kurento_kas_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 	pDecodecVideo = avcodec_find_decoder(pDecodecCtxVideo->codec_id);
 	if (pDecodecVideo == NULL) {
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Unsupported codec!");
-		return -5; // Codec not found
+		ret = -5; // Codec not found
+		goto end;
 	}
 	
 	// Open video codec
-	if (avcodec_open(pDecodecCtxVideo, pDecodecVideo) < 0)
-		return -6; // Could not open codec
-	
+	if (avcodec_open(pDecodecCtxVideo, pDecodecVideo) < 0) {
+		ret = -6; // Could not open codec
+		goto end;
+	}
 	
 	
 	
@@ -143,9 +158,10 @@ Java_com_kurento_kas_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 
 	//Allocate an AVFrame structure
 	pFrameRGB = avcodec_alloc_frame();
-	if (pFrameRGB == NULL)
-		return -7;
-		
+	if (pFrameRGB == NULL) {
+		ret = -7;
+		goto end;
+	}
 	// Determine required buffer size and allocate buffer
 	numBytes = avpicture_get_size(PIX_FMT_RGB32, pDecodecCtxVideo->width,
 			pDecodecCtxVideo->height);
@@ -170,7 +186,8 @@ Java_com_kurento_kas_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 	jmethodID midVideo = (*env)->GetMethodID(env, cls, "putVideoFrameRx", "([III)V");
 	if (midVideo == 0) {
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "putVideoFrameRx([III)V no exist!");
-		return -8;
+		ret = -8;
+		goto end;
 	}
 
 	//Definir el tamaño de out_buffer
@@ -179,9 +196,6 @@ Java_com_kurento_kas_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 	
 	
 	//READING THE DATA
-	pthread_mutex_lock(&mutex);
-	receive = 1;
-	pthread_mutex_unlock(&mutex);
 	for(;;) {
 		pthread_mutex_lock(&mutex);
 		if (!receive) {
@@ -221,8 +235,10 @@ Java_com_kurento_kas_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 								pDecodecCtxVideo->width, pDecodecCtxVideo->height, PIX_FMT_RGB32,
 								sws_flags, NULL, NULL, NULL);
 
-						if (img_convert_ctx == NULL)
-							return -8;
+						if (img_convert_ctx == NULL) {
+							ret = -9;
+							goto end;
+						}
 
 						sws_scale(img_convert_ctx, pFrame->data, pFrame->linesize, 0,
 								pDecodecCtxVideo->height, ((AVPicture*) pFrameRGB)->data,
@@ -241,16 +257,16 @@ Java_com_kurento_kas_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 					avpkt.data += len;
 				}
 			}
-
 			//Free the packet that was allocated by av_read_frame
 			avpkt.data = avpkt_data_init;
 			av_free_packet(&avpkt);
 		}
-		
 	}
-	
+
+	ret = 0;
+
+end:
 	(*env)->ReleaseStringUTFChars(env, sdp_str, pSdpString);
-	
 	//Free the RGB image
 	av_free(buffer);
 	av_free(pFrameRGB);
@@ -258,13 +274,14 @@ Java_com_kurento_kas_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 	//Free the YUV frame
 	av_free(pFrame);
 	//Close the codec
-	avcodec_close(pDecodecCtxVideo);
+	if (pDecodecCtxVideo)
+		avcodec_close(pDecodecCtxVideo);
 
 	//Close the video file
 	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "Close the context...");
 	close_context(pFormatCtx);
 	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "ok");
 
-	return 0;
+	return ret;
 }
 
