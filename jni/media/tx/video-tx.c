@@ -294,8 +294,6 @@ Java_com_kurento_kas_media_tx_MediaTx_initVideo(JNIEnv* env,
 	URLContext *urlContext;
 	
 	pthread_mutex_lock(&mutex);
-	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "Entro en initVideo");
-
 
 #ifndef USE_X264_TREE
 	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "USE_X264_TREE no def");
@@ -337,15 +335,8 @@ Java_com_kurento_kas_media_tx_MediaTx_initVideo(JNIEnv* env,
 		ret = -1;
 		goto end;
 	}
-	snprintf(buf, sizeof(buf), "Format established: %s", fmt->name);
-	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
-	
 	fmt->video_codec = VIDEO_CODECS[codecId];
-	snprintf(buf, sizeof(buf), "video codecId: %d", codecId);
-	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
-	snprintf(buf, sizeof(buf), "Video Codec stablished: %s", VIDEO_CODEC_NAMES[codecId]);
-	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
-	
+
 	/* allocate the output media context */
 	oc = avformat_alloc_context();
 	if (!oc) {
@@ -580,16 +571,12 @@ Java_com_kurento_kas_media_tx_MediaTx_finishVideo (JNIEnv* env,
 			av_freep(&oc->streams[i]->codec);
 			av_freep(&oc->streams[i]);
 		}
-		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "Close the context...");
 		close_context(oc);
 		oc = NULL;
-		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "ok");
 	}	
 /*	for (i=0;i<AVMEDIA_TYPE_NB;i++)
 		av_free(avcodec_opts[i]);
-__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "536");	
 	av_free(avformat_opts);
-__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "538");	
 	av_free(sws_opts);
 */
 	pthread_mutex_unlock(&mutex);
