@@ -243,6 +243,7 @@ Java_com_kurento_kas_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 						sws_scale(img_convert_ctx, pFrame->data, pFrame->linesize, 0,
 								pDecodecCtxVideo->height, ((AVPicture*) pFrameRGB)->data,
 								((AVPicture*) pFrameRGB)->linesize);
+						sws_freeContext(img_convert_ctx);
 
 						(*env)->SetByteArrayRegion(env, out_buffer_video, 0,
 								(pDecodecCtxVideo->width * 4 * pDecodecCtxVideo->height),
