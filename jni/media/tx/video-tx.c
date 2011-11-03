@@ -436,28 +436,6 @@ end:
 ////////////////////////////////////////////////////////////////////////////////////////
 //PUT VIDEO FRAME
 
-/*
-static void NV21_to_YUV420P(AVFrame *pictNV21, AVFrame *pictYUV420P, int width, int height)
-{
-	int i, length;
-	
-	//Y is the same
-	length = width*height;
-	for(i=0; i<length; i++) {
-		 pictYUV420P->data[0][i] = pictNV21->data[0][i];
-	}
-	
-	//Cb (U)
-	//Cr (V)
-	length = width*height/4;
-	for(i=0; i<length; i++) {
-		 pictYUV420P->data[2][i] = pictNV21->data[1][2*i];
-		 pictYUV420P->data[1][i] = pictNV21->data[1][2*i+1];
-	}
- 	
-}
-*/
-
 /**
  * see ffmpeg.c
  */
@@ -469,32 +447,18 @@ static int write_video_frame(AVFormatContext *oc, AVStream *st, int srcWidth, in
 
 	c = st->codec;
 	
-	//Change pix formar and resample if it is necesary
-//	snprintf(buf, sizeof(buf), "c->width: %d \t c->height: %d \t srcWidth: %d \t srcHeight: %d", c->width, c->height, srcWidth, srcHeight);
-//		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
-	
-	
-//	if ( srcWidth==c->width  &&  srcHeight==c->height) {
-//		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "NV21_to_YUV420P");
-//		NV21_to_YUV420P(tmp_picture, picture, c->width, c->height);
-//	} else {
-//		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "Crea scale context");
-		img_convert_ctx = sws_getContext(srcWidth, srcHeight,
-						SRC_PIX_FMT,
-						c->width, c->height,
-						c->pix_fmt,
-						sws_flags, NULL, NULL, NULL);
-		if (img_convert_ctx == NULL) {
-			__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Cannot initialize the conversion context");
-			return -1;
-		}
-		sws_scale(img_convert_ctx, tmp_picture->data, tmp_picture->linesize,
-			0, c->height, picture->data, picture->linesize);
-		sws_freeContext(img_convert_ctx);
-//	}
-	
-
-	
+	img_convert_ctx = sws_getContext(srcWidth, srcHeight,
+					SRC_PIX_FMT,
+					c->width, c->height,
+					c->pix_fmt,
+					sws_flags, NULL, NULL, NULL);
+	if (img_convert_ctx == NULL) {
+		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Cannot initialize the conversion context");
+		return -1;
+	}
+	sws_scale(img_convert_ctx, tmp_picture->data, tmp_picture->linesize,
+		0, c->height, picture->data, picture->linesize);
+	sws_freeContext(img_convert_ctx);
 	
 	if (oc->oformat->flags & AVFMT_RAWPICTURE) {
 		/* raw video case. The API will change slightly in the near
