@@ -490,8 +490,8 @@ static int write_video_frame(AVFormatContext *oc, AVStream *st, int srcWidth, in
 		}
 		sws_scale(img_convert_ctx, tmp_picture->data, tmp_picture->linesize,
 			0, c->height, picture->data, picture->linesize);
+		sws_freeContext(img_convert_ctx);
 //	}
-	
 	
 
 	
