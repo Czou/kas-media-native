@@ -221,7 +221,7 @@ static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id, in
 	c->pix_fmt = PIX_FMT_YUV420P;
 //	c->pix_fmt = PIX_FMT_NV21;
 
-	c->rc_buffer_size = c->bit_rate*(int64_t)c->time_base.num;
+	c->rc_buffer_size = INT_MAX;	//((c->bit_rate * (int64_t)c->time_base.num) / (int64_t)c->time_base.den) + 1;
 
 snprintf(buf, sizeof(buf), "bit_rate: %d", c->bit_rate);
 __android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
@@ -294,8 +294,6 @@ Java_com_kurento_kas_media_tx_MediaTx_initVideo(JNIEnv* env,
 	URLContext *urlContext;
 	
 	pthread_mutex_lock(&mutex);
-	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "Entro en initVideo");
-
 
 #ifndef USE_X264_TREE
 	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "USE_X264_TREE no def");
@@ -337,15 +335,8 @@ Java_com_kurento_kas_media_tx_MediaTx_initVideo(JNIEnv* env,
 		ret = -1;
 		goto end;
 	}
-	snprintf(buf, sizeof(buf), "Format established: %s", fmt->name);
-	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
-	
 	fmt->video_codec = VIDEO_CODECS[codecId];
-	snprintf(buf, sizeof(buf), "video codecId: %d", codecId);
-	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
-	snprintf(buf, sizeof(buf), "Video Codec stablished: %s", VIDEO_CODEC_NAMES[codecId]);
-	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
-	
+
 	/* allocate the output media context */
 	oc = avformat_alloc_context();
 	if (!oc) {
@@ -436,28 +427,6 @@ end:
 ////////////////////////////////////////////////////////////////////////////////////////
 //PUT VIDEO FRAME
 
-/*
-static void NV21_to_YUV420P(AVFrame *pictNV21, AVFrame *pictYUV420P, int width, int height)
-{
-	int i, length;
-	
-	//Y is the same
-	length = width*height;
-	for(i=0; i<length; i++) {
-		 pictYUV420P->data[0][i] = pictNV21->data[0][i];
-	}
-	
-	//Cb (U)
-	//Cr (V)
-	length = width*height/4;
-	for(i=0; i<length; i++) {
-		 pictYUV420P->data[2][i] = pictNV21->data[1][2*i];
-		 pictYUV420P->data[1][i] = pictNV21->data[1][2*i+1];
-	}
- 	
-}
-*/
-
 /**
  * see ffmpeg.c
  */
@@ -469,32 +438,18 @@ static int write_video_frame(AVFormatContext *oc, AVStream *st, int srcWidth, in
 
 	c = st->codec;
 	
-	//Change pix formar and resample if it is necesary
-//	snprintf(buf, sizeof(buf), "c->width: %d \t c->height: %d \t srcWidth: %d \t srcHeight: %d", c->width, c->height, srcWidth, srcHeight);
-//		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
-	
-	
-//	if ( srcWidth==c->width  &&  srcHeight==c->height) {
-//		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "NV21_to_YUV420P");
-//		NV21_to_YUV420P(tmp_picture, picture, c->width, c->height);
-//	} else {
-//		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "Crea scale context");
-		img_convert_ctx = sws_getContext(srcWidth, srcHeight,
-						SRC_PIX_FMT,
-						c->width, c->height,
-						c->pix_fmt,
-						sws_flags, NULL, NULL, NULL);
-		if (img_convert_ctx == NULL) {
-			__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Cannot initialize the conversion context");
-			return -1;
-		}
-		sws_scale(img_convert_ctx, tmp_picture->data, tmp_picture->linesize,
-			0, c->height, picture->data, picture->linesize);
-//	}
-	
-	
-
-	
+	img_convert_ctx = sws_getContext(srcWidth, srcHeight,
+					SRC_PIX_FMT,
+					c->width, c->height,
+					c->pix_fmt,
+					sws_flags, NULL, NULL, NULL);
+	if (img_convert_ctx == NULL) {
+		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Cannot initialize the conversion context");
+		return -1;
+	}
+	sws_scale(img_convert_ctx, tmp_picture->data, tmp_picture->linesize,
+		0, c->height, picture->data, picture->linesize);
+	sws_freeContext(img_convert_ctx);
 	
 	if (oc->oformat->flags & AVFMT_RAWPICTURE) {
 		/* raw video case. The API will change slightly in the near
@@ -616,16 +571,12 @@ Java_com_kurento_kas_media_tx_MediaTx_finishVideo (JNIEnv* env,
 			av_freep(&oc->streams[i]->codec);
 			av_freep(&oc->streams[i]);
 		}
-		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "Close the context...");
 		close_context(oc);
 		oc = NULL;
-		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "ok");
 	}	
 /*	for (i=0;i<AVMEDIA_TYPE_NB;i++)
 		av_free(avcodec_opts[i]);
-__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "536");	
 	av_free(avformat_opts);
-__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "538");	
 	av_free(sws_opts);
 */
 	pthread_mutex_unlock(&mutex);
