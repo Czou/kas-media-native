@@ -19,8 +19,8 @@ echo "NDK=$(cat $ANDROID_NDK_HOME/RELEASE.TXT); $abi-$gccvers ABI";
 export LD="$ARM_TOOL/bin/$abi-ld"
 export CC="$ARM_TOOL/bin/$abi-gcc"
 export CXX="$ARM_TOOL/bin/$abi-g++"
-export   CFLAGS="-I$ARM_INC -DANDROID -fpic -mthumb-interwork -ffunction-sections -funwind-tables -fstack-protector -fno-short-enums -D__ARM_ARCH_7A__   -Wno-psabi -march=armv7-a -msoft-float -mthumb -Os -O -fomit-frame-pointer -fno-strict-aliasing -finline-limit=64 -Wa,--noexecstack -MMD -MP"
-export CXXFLAGS="-I$ARM_INC -DANDROID -fpic -mthumb-interwork -ffunction-sections -funwind-tables -fstack-protector -fno-short-enums -D__ARM_ARCH_7A__   -Wno-psabi -march=armv7-a -msoft-float -mthumb -Os -O -fomit-frame-pointer -fno-strict-aliasing -finline-limit=64 -Wa,--noexecstack -MMD -MP" 
+export   CFLAGS="$MY_CFLAGS"
+export CXXFLAGS="$MY_CFLAGS" 
 export LDFLAGS="-I$ARM_INC -L$ARM_LIBO -nostdlib -Bdynamic  -Wl,--no-undefined -Wl,-z,noexecstack  -Wl,-z,nocopyreloc -Wl,-soname,/system/lib/libz.so -Wl,-rpath-link=$PLATFORM/usr/lib,-dynamic-linker=/system/bin/linker -L$ARM_LIB  -lc -lm -ldl -lsupc++ -Wl,--library-path=$PLATFORM/usr/lib/ -Xlinker $PLATFORM/usr/lib/crtbegin_dynamic.o -Xlinker $PLATFORM/usr/lib/crtend_android.o "
 
 ./configure --prefix=$MY_AMR_INSTALL --host=arm
