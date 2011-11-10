@@ -14,7 +14,7 @@ echo "NDK=$(cat $ANDROID_NDK_HOME/RELEASE.TXT); $abi-$gccvers ABI";
 ./configure --prefix=$MY_X264_INSTALL \
 	--disable-gpac \
 	--extra-cflags="$MY_CFLAGS" \
-	--extra-ldflags="-L$ARM_LIBO  -nostdlib -Bdynamic  -Wl,--no-undefined -Wl,-z,noexecstack  -Wl,-z,nocopyreloc -Wl,-soname,/system/lib/libz.so -Wl,-rpath-link=$PLATFORM/usr/lib,-dynamic-linker=/system/bin/linker -L$ARM_LIB -nostdlib $ARM_LIB/crtbegin_dynamic.o $ARM_LIB/crtend_android.o -lc -lm -ldl -lgcc " \
+	--extra-ldflags="$MY_LDFLAGS -lgcc" \
 	--disable-asm \
 	--cross-prefix=$ARM_TOOL/bin/$abi- \
 	--disable-pthread \
