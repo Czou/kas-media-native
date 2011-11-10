@@ -50,11 +50,11 @@ export abi=arm-linux-androideabi;
 export gccvers=4.4.3
 echo "NDK=$(cat $ANDROID_NDK_HOME/RELEASE.TXT); $abi-$gccvers ABI";
 
-PLATFORM=$ANDROID_NDK_HOME/platforms/android-8/arch-arm
-ARM_INC=$PLATFORM/usr/include
+export PLATFORM=$ANDROID_NDK_HOME/platforms/android-8/arch-arm
+export ARM_INC=$PLATFORM/usr/include
 ARM_LIB=$PLATFORM/usr/lib
-ARM_TOOL=$ANDROID_NDK_HOME/toolchains/$abi-$gccvers/prebuilt/linux-x86
-ARM_LIBO=$ARM_TOOL/lib/gcc/$abi/$gccvers
+export ARM_TOOL=$ANDROID_NDK_HOME/toolchains/$abi-$gccvers/prebuilt/linux-x86
+export ARM_LIBO=$ARM_TOOL/lib/gcc/$abi/$gccvers
 
 #export USE_X264_TREE=x264-0.106.1741
 if [ "" == "$USE_X264_TREE" ]; then
