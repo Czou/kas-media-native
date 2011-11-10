@@ -11,7 +11,7 @@ if [ "" == "$MY_FFMPEG_INSTALL" ]; then
   exit -1;
 fi
 
-if [ "$USE_X264_TREE" != "" && "" == "$MY_X264_INSTALL" ]; then
+if [[ "$USE_X264_TREE" != "" && "" == "$MY_X264_INSTALL" ]]; then
   echo "Please set MY_X264_INSTALL to the location where x264 should be installed.";
   exit -1;
 fi
