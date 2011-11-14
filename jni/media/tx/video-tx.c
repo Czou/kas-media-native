@@ -33,6 +33,8 @@
 #include "libavcodec/opt.h"
 #include "libavformat/rtpenc.h"
 
+#include <time.h>
+
 /*
 	see	libavformat/output-example.c
 		libavcodec/api-example.c
@@ -67,6 +69,12 @@ static AVFormatContext *oc;
 static AVStream *video_st;
 
 static uint8_t *picture_buf;
+
+
+static int frame_num;
+static unsigned int total_out_size;
+
+uint64_t init_encode_time;
 
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -217,7 +225,13 @@ static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id, in
 	c->time_base.den = frame_rate_num;	//15;
 	c->time_base.num = frame_rate_den;
 	c->gop_size = gop_size;//12; /* emit one intra frame every twelve frames at most */
-	c->max_b_frames=0;
+	c->keyint_min = gop_size;
+	c->max_b_frames = 0;
+
+	c->qmin=31;
+	c->qmax=31;
+//	c->qcompress=0.6;
+
 	c->pix_fmt = PIX_FMT_YUV420P;
 //	c->pix_fmt = PIX_FMT_NV21;
 
@@ -225,7 +239,18 @@ static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id, in
 
 snprintf(buf, sizeof(buf), "bit_rate: %d", c->bit_rate);
 __android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
-snprintf(buf, sizeof(buf), "gop_size: %d\tmax_b_frames: %d", c->gop_size, c->max_b_frames);
+snprintf(buf, sizeof(buf), "rc_min_rate: %d", c->rc_min_rate);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+snprintf(buf, sizeof(buf), "rc_max_rate: %d", c->rc_max_rate);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+snprintf(buf, sizeof(buf), "gop_size: %d\tkeyint_min: %d\tmax_b_frames: %d", c->gop_size, c->keyint_min, c->max_b_frames);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+
+snprintf(buf, sizeof(buf), "qmin: %d", c->qmin);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+snprintf(buf, sizeof(buf), "qmax: %d", c->qmax);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+snprintf(buf, sizeof(buf), "qcompress: %d", c->qcompress);
 __android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 
 	if (c->codec_id == CODEC_ID_MPEG2VIDEO) {
@@ -294,6 +319,10 @@ Java_com_kurento_kas_media_tx_MediaTx_initVideo(JNIEnv* env,
 	URLContext *urlContext;
 	
 	pthread_mutex_lock(&mutex);
+
+	frame_num = 0;
+	total_out_size = 0;
+	init_encode_time = 0;
 
 #ifndef USE_X264_TREE
 	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "USE_X264_TREE no def");
@@ -427,6 +456,14 @@ end:
 ////////////////////////////////////////////////////////////////////////////////////////
 //PUT VIDEO FRAME
 
+
+static int64_t timespecDiff(struct timespec *timeA_p, struct timespec *timeB_p)
+{
+	return ( ((timeA_p->tv_sec * 1000000000) + timeA_p->tv_nsec) -
+		((timeB_p->tv_sec * 1000000000) + timeB_p->tv_nsec) )/1000000;
+}
+
+
 /**
  * see ffmpeg.c
  */
@@ -435,6 +472,9 @@ static int write_video_frame(AVFormatContext *oc, AVStream *st, int srcWidth, in
 	int out_size, ret;
 	AVCodecContext *c;
 	struct SwsContext *img_convert_ctx;
+
+	struct timespec start, end;
+	uint64_t encode_time;
 
 	c = st->codec;
 	
@@ -462,8 +502,18 @@ static int write_video_frame(AVFormatContext *oc, AVStream *st, int srcWidth, in
 		pkt.size= sizeof(AVPicture);
 		ret = av_interleaved_write_frame(oc, &pkt);
 	} else {
+		clock_gettime(CLOCK_MONOTONIC, &start);
 		/* encode the image */
 		out_size = avcodec_encode_video(c, video_outbuf, video_outbuf_size, picture);
+		clock_gettime(CLOCK_MONOTONIC, &end);
+		encode_time = timespecDiff(&end, &start);
+
+		total_out_size += out_size;
+		frame_num ++;
+
+		snprintf(buf, sizeof(buf), "%d - out_size: %d Bytes \ttotal_out_size: %d Bytes\tencode_time: %llu ms", frame_num , out_size, total_out_size, encode_time);
+		__android_log_write(ANDROID_LOG_INFO, LOG_TAG, buf);
+
 		/* if zero size, it means the image was buffered */
 		if (out_size > 0) {
 			AVPacket pkt;
@@ -499,7 +549,14 @@ Java_com_kurento_kas_media_tx_MediaTx_putVideoFrame(JNIEnv* env,
 	uint8_t *picture2_buf;
 	int size;
 	
+	struct timespec total_start, total_end;
+	uint64_t total_encode_time, kbps;
+	
+	
 	pthread_mutex_lock(&mutex);
+
+	clock_gettime(CLOCK_MONOTONIC, &total_start);
+	
 
 	if (!oc) {
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "No video initiated.");
@@ -530,6 +587,15 @@ Java_com_kurento_kas_media_tx_MediaTx_putVideoFrame(JNIEnv* env,
 	av_free(picture2_buf);
 	ret = 0;
 	
+	clock_gettime(CLOCK_MONOTONIC, &total_end);
+	total_encode_time = timespecDiff(&total_end, &total_start);
+	init_encode_time += total_encode_time;
+
+	kbps = ((total_out_size*8) / init_encode_time);
+
+	snprintf(buf, sizeof(buf), "total_encode_time: %llu ms\tinit_encode_time: %llu ms\t%llu kbps", total_encode_time, init_encode_time, kbps);
+	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+
 end:
 	pthread_mutex_unlock(&mutex);
 	return ret;
