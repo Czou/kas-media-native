@@ -187,7 +187,7 @@ static int opt_preset(const char *preset_file)
  * see new_video_stream in ffmpeg.c
  */
 static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id, int width, int height,
-				int frame_rate_num, int frame_rate_den, int bit_rate, int gop_size, const char *preset_file)
+				int frame_rate_num, int frame_rate_den, int bit_rate, int gop_size, int qmax, const char *preset_file)
 {
 	AVCodecContext *c;
 	AVStream *st;
@@ -217,7 +217,9 @@ static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id, in
 	c->time_base.den = frame_rate_num;	//15;
 	c->time_base.num = frame_rate_den;
 	c->gop_size = gop_size;//12; /* emit one intra frame every twelve frames at most */
-	c->max_b_frames=0;
+	c->keyint_min = gop_size;
+	c->max_b_frames = 0;
+	c->qmax = qmax;
 	c->pix_fmt = PIX_FMT_YUV420P;
 //	c->pix_fmt = PIX_FMT_NV21;
 
@@ -225,8 +227,22 @@ static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id, in
 
 snprintf(buf, sizeof(buf), "bit_rate: %d", c->bit_rate);
 __android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
-snprintf(buf, sizeof(buf), "gop_size: %d\tmax_b_frames: %d", c->gop_size, c->max_b_frames);
+
+snprintf(buf, sizeof(buf), "rc_min_rate: %d", c->rc_min_rate);
 __android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+snprintf(buf, sizeof(buf), "rc_max_rate: %d", c->rc_max_rate);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+snprintf(buf, sizeof(buf), "gop_size: %d\tkeyint_min: %d\tmax_b_frames: %d", c->gop_size, c->keyint_min, c->max_b_frames);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+
+snprintf(buf, sizeof(buf), "qmin: %d", c->qmin);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+snprintf(buf, sizeof(buf), "qmax: %d", c->qmax);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+snprintf(buf, sizeof(buf), "qcompress: %d", c->qcompress);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+
+
 
 	if (c->codec_id == CODEC_ID_MPEG2VIDEO) {
 		/* just for testing, we also add B frames */
@@ -285,7 +301,7 @@ jint
 Java_com_kurento_kas_media_tx_MediaTx_initVideo(JNIEnv* env,
 			jobject thiz,
 			jstring outfile, jint width, jint height, jint frame_rate_num, jint frame_rate_den,
-			jint bit_rate, jint gop_size, jint codecId, jint payload_type, jstring presetFile)
+			jint bit_rate, jint gop_size, jint qmax, jint codecId, jint payload_type, jstring presetFile)
 {
 	int i, ret;
 	
@@ -352,7 +368,7 @@ Java_com_kurento_kas_media_tx_MediaTx_initVideo(JNIEnv* env,
 	video_st = NULL;
 	
 	if (fmt->video_codec != CODEC_ID_NONE) {
-		video_st = add_video_stream(oc, fmt->video_codec, width, height, frame_rate_num, frame_rate_den, bit_rate, gop_size, pPresetFile);
+		video_st = add_video_stream(oc, fmt->video_codec, width, height, frame_rate_num, frame_rate_den, bit_rate, gop_size, qmax, pPresetFile);
 		if(!video_st) {
 			ret = -3;
 			goto end;
