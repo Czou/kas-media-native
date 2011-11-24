@@ -30,6 +30,8 @@
 #include "libavformat/avformat.h"
 #include "libswscale/swscale.h"
 
+#include "sdp-manager.h"
+
 
 static char buf[256]; //Log
 static char* LOG_TAG = "NDK-video-rx";

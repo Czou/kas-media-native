@@ -24,6 +24,8 @@
 #include "sdp-manager.h"
 #include "libavformat/rtsp.h"
 
+#include "socket-manager.h"
+
 //Based on libavformat/rtsp.c
 static int rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
 {

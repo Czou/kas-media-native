@@ -29,6 +29,8 @@
 
 #include "libavformat/avformat.h"
 
+#include "sdp-manager.h"
+
 
 static char buf[256]; //Log
 static char* LOG_TAG = "NDK-audio-rx";
@@ -39,8 +41,6 @@ enum {
 
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static int receive = 0;
-
-
 
 jint
 Java_com_kurento_kas_media_rx_MediaRx_stopAudioRx(JNIEnv* env,
@@ -71,7 +71,6 @@ Java_com_kurento_kas_media_rx_MediaRx_startAudioRx(JNIEnv* env, jobject thiz,
 	uint8_t outbuf[DATA_SIZE];
 
 	int i, ret, audioStream, out_size, len;
-
 
 	pSdpString = (*env)->GetStringUTFChars(env, sdp_str, NULL);
 	if (pSdpString == NULL) {
