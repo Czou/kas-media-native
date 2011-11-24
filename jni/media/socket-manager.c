@@ -25,6 +25,7 @@
 
 #include <jni.h>
 #include <pthread.h>
+#include <semaphore.h>
 #include <android/log.h>
 
 #include "libavformat/rtsp.h"
@@ -37,6 +38,10 @@ static char buf[256]; //Log
 static char* LOG_TAG = "NDK-socket-manager";
 
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+static sem_t sem;
+static int initiated;
+static int last_released = 1;
+static int n_blocked = 0;
 
 static AVFormatContext *pAudioFormatCtx;
 static int nAudio;
@@ -57,6 +62,18 @@ get_connection(int media_type, int port) {
 	}
 
 	pthread_mutex_lock(&mutex);
+
+	if (!initiated) {
+		sem_init(&sem, 0, 0);
+		initiated = 1;
+	}
+	if (!last_released) {
+		n_blocked++;
+		pthread_mutex_unlock(&mutex);
+		sem_wait(&sem);
+		pthread_mutex_lock(&mutex);
+		n_blocked--;
+	}
 
 	if (media_type == AUDIO)
 		s = pAudioFormatCtx;
@@ -101,6 +118,9 @@ get_connection(int media_type, int port) {
 }
 
 static void free_connection(URLContext *urlContext) {
+
+	int i;
+
 	pthread_mutex_lock(&mutex);
 
 	snprintf(buf, sizeof(buf), "before nAudio: %d", nAudio);
@@ -128,6 +148,14 @@ static void free_connection(URLContext *urlContext) {
 	__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
 	snprintf(buf, sizeof(buf), "after nVideo: %d", nVideo);
 	__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
+
+	last_released = (nAudio == 0) && (nVideo == 0);
+	if (last_released) {
+		snprintf(buf, sizeof(buf), "deblocked: %d", n_blocked);
+		__android_log_write(ANDROID_LOG_INFO, LOG_TAG, buf);
+		for (i = 0; i < n_blocked; i++)
+			sem_post(&sem);
+	}
 
 	pthread_mutex_unlock(&mutex);
 }
