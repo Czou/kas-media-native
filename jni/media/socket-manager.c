@@ -110,16 +110,16 @@ static void free_connection(URLContext *urlContext) {
 
 	if (pAudioFormatCtx && pAudioFormatCtx->pb && (urlContext
 			== pAudioFormatCtx->pb->opaque) && (--nAudio == 0)) {
-		snprintf(buf, sizeof(buf), "free pAudioFormatCtx");
+		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "free pAudioFormatCtx");
 		av_free(pAudioFormatCtx);
-		snprintf(buf, sizeof(buf), "free ok");
+		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "free ok");
 		pAudioFormatCtx = NULL;
 	}
 	if (pVideoFormatCtx && pVideoFormatCtx->pb && (urlContext
 			== pVideoFormatCtx->pb->opaque) && (--nVideo == 0)) {
-		snprintf(buf, sizeof(buf), "free pVideoFormatCtx");
+		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "free pVideoFormatCtx");
 		av_free(pVideoFormatCtx);
-		snprintf(buf, sizeof(buf), "free ok");
+		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "free ok");
 		pVideoFormatCtx = NULL;
 	}
 	urlContext = NULL;
