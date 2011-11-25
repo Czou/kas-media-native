@@ -69,9 +69,9 @@ Java_com_kurento_kas_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 	uint8_t *avpkt_data_init;
 	
 	jintArray out_buffer_video;
-	uint8_t *buffer;
+	uint8_t *buffer = NULL;
 	
-	int i, ret, audioStream, videoStream, numBytes, len, got_picture;
+	int i, ret, audioStream, videoStream, buffer_nbytes, picture_nbytes, len, got_picture;
 	int current_width, current_height;
 	
 	struct SwsContext *img_convert_ctx;
@@ -152,9 +152,7 @@ Java_com_kurento_kas_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 		ret = -6; // Could not open codec
 		goto end;
 	}
-	
-	
-	
+
 	//STORING THE DATA
 	//Allocate video frame
 	pFrame = avcodec_alloc_frame();
@@ -165,27 +163,7 @@ Java_com_kurento_kas_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 		ret = -7;
 		goto end;
 	}
-	
-	__android_log_write(ANDROID_LOG_INFO, LOG_TAG, "SUPPORT DIFFERENT FRAME SIZES. With ReleaseIntArrayElements");
-	snprintf(buf, sizeof(buf), "pDecodecCtxVideo->width: %d", pDecodecCtxVideo->width);
-	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
-	snprintf(buf, sizeof(buf), "pDecodecCtxVideo->height: %d", pDecodecCtxVideo->height);
-	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
-	
-	current_width = pDecodecCtxVideo->width;
-	current_height = pDecodecCtxVideo->height;
-	
-	// Determine required buffer size and allocate buffer
-	numBytes = avpicture_get_size(PIX_FMT_RGB32, current_width, current_height);
-	buffer = (uint8_t *) av_malloc(numBytes * sizeof(uint8_t));
 
-	//Assign appropriate parts of buffer to image planes in pFrameRGB
-	//Note that pFrameRGB is an AVFrame, but AVFrame is a superset of AVPicture
-	avpicture_fill((AVPicture*) pFrameRGB, buffer, PIX_FMT_RGB32, current_width, current_height);
-	
-	out_buffer_video = (jintArray)(*env)->NewIntArray(env, numBytes);
-
-	
 	//Prepare Call to Method Java.
 	jclass cls = (*env)->GetObjectClass(env, videoPlayer);
 	
@@ -196,6 +174,9 @@ Java_com_kurento_kas_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 		goto end;
 	}
 
+	current_width = -1;
+	current_height = -1;
+	buffer_nbytes = -1;
 
 	//READING THE DATA
 	for(;;) {
@@ -231,23 +212,27 @@ Java_com_kurento_kas_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 					}
 					//Did we get a video frame?
 					if (got_picture) {
-						if ( (current_width != pDecodecCtxVideo->width) || (current_height != pDecodecCtxVideo->height) ) {
+						if ( (buffer_nbytes < 0) || (current_width != pDecodecCtxVideo->width) || (current_height != pDecodecCtxVideo->height) ) {
 							current_width = pDecodecCtxVideo->width;
 							current_height = pDecodecCtxVideo->height;
-							snprintf(buf, sizeof(buf), "current_width: %d\tcurrent_height: %d", current_width, current_height);
-							__android_log_write(ANDROID_LOG_INFO, LOG_TAG, buf);
-
-							av_free(buffer);
-							(*env)->DeleteLocalRef(env, out_buffer_video);
-
-							// Determine required buffer size and allocate buffer
-							numBytes = avpicture_get_size(PIX_FMT_RGB32, current_width, current_height);
-							buffer = (uint8_t *) av_malloc(numBytes * sizeof(uint8_t));
-
+							// Determine required picture size
+							picture_nbytes = avpicture_get_size(PIX_FMT_RGB32, current_width, current_height);
+							if (picture_nbytes > buffer_nbytes) {
+								buffer = (uint8_t *) av_realloc(buffer, picture_nbytes * sizeof(uint8_t));
+								if (buffer == NULL) {
+									__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Error in alloc buffer.");
+									buffer_nbytes = -1;
+									break;
+								}
+								(*env)->DeleteLocalRef(env, out_buffer_video);
+								out_buffer_video = (jintArray)(*env)->NewIntArray(env, picture_nbytes);
+								buffer_nbytes = picture_nbytes;
+							}
 							//Assign appropriate parts of buffer to image planes in pFrameRGB
 							//Note that pFrameRGB is an AVFrame, but AVFrame is a superset of AVPicture
 							avpicture_fill((AVPicture*) pFrameRGB, buffer, PIX_FMT_RGB32, current_width, current_height);
-							out_buffer_video = (jintArray)(*env)->NewIntArray(env, numBytes);
+							snprintf(buf, sizeof(buf), "current_width: %d\tcurrent_height: %d\tpicture_nbytes: %d", current_width, current_height, picture_nbytes);
+							__android_log_write(ANDROID_LOG_INFO, LOG_TAG, buf);
 						}
 						//Convert the image from its native format to RGB
 						img_convert_ctx = sws_getContext(current_width,
@@ -262,8 +247,7 @@ Java_com_kurento_kas_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 								current_height, ((AVPicture*) pFrameRGB)->data,
 								((AVPicture*) pFrameRGB)->linesize);
 						sws_freeContext(img_convert_ctx);
-
-						(*env)->SetByteArrayRegion(env, out_buffer_video, 0, numBytes, (jint *) pFrameRGB->data[0]);
+						(*env)->SetByteArrayRegion(env, out_buffer_video, 0, picture_nbytes, (jint *) pFrameRGB->data[0]);
 						(*env)->CallVoidMethod(env, videoPlayer, midVideo, out_buffer_video, current_width, current_height);
 					}
 					pthread_mutex_unlock(&mutex);
