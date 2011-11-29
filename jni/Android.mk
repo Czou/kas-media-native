@@ -1,4 +1,3 @@
-TOP_LOCAL_PATH := $(call my-dir)
 
 export MY_FFMPEG_SOURCE := $(NDK_PROJECT_PATH)/jni/ffmpeg-0.7-rc1
 export MY_FFMPEG_INSTALL := $(MY_FFMPEG_SOURCE)
