@@ -1,27 +1,33 @@
 TOP_LOCAL_PATH := $(call my-dir)
 
-include $(call all-subdir-makefiles)
+export MY_FFMPEG_SOURCE := $(NDK_PROJECT_PATH)/jni/ffmpeg-0.7-rc1
+export MY_FFMPEG_INSTALL := $(MY_FFMPEG_SOURCE)
 
-RESULT:= $(shell cd $(NDK_PROJECT_PATH)/jni/ffmpeg-0.7-rc1 && ./config-ffmpeg.sh)
-
-LOCAL_PATH := $(TOP_LOCAL_PATH)
 ifdef USE_X264_TREE
-    $(info "GPL version, with H264 encoding support")
-    LOCAL_X264_C_INCLUDE := $(LOCAL_PATH)/ffmpeg-0.7-rc1/x264install/include
-    LOCAL_X264_LDLIB := -L$(LOCAL_PATH)/ffmpeg-0.7-rc1/x264install/lib -lx264
+	$(info "GPL version, with H264 encoding support")
+	MY_X264_INSTALL := $(MY_FFMPEG_INSTALL)/x264install
+	MY_X264_C_INCLUDE := $(MY_X264_INSTALL)/include
+	MY_X264_LDLIB := -L$(MY_X264_INSTALL)/lib -lx264
 endif
 
+%/config.mak: force
+	cd $(MY_FFMPEG_SOURCE) && $(MY_FFMPEG_SOURCE)/config-ffmpeg.sh
+force: ;
+
+TOP_LOCAL_PATH := $(call my-dir)
+include $(call all-subdir-makefiles)
+LOCAL_PATH := $(TOP_LOCAL_PATH)
 include $(CLEAR_VARS)
 
-LOCAL_C_INCLUDES := 	$(LOCAL_PATH)/ffmpeg-0.7-rc1	\
-			$(LOCAL_X264_C_INCLUDE)	\
-			$(LOCAL_PATH)/ffmpeg-0.7-rc1/opencore-amr_install/include	\
+LOCAL_C_INCLUDES := 	$(MY_FFMPEG_INSTALL)	\
+			$(MY_X264_C_INCLUDE)	\
+			$(MY_FFMPEG_INSTALL)/opencore-amr_install/include	\
 			$(LOCAL_PATH)/media	\
 			$(LOCAL_PATH)/media/rx
 
 LOCAL_STATIC_LIBRARIES := libavformat libavcodec libavutil libpostproc libswscale 
-LOCAL_LDLIBS :=	-llog $(LOCAL_X264_LDLIB)	\
-		-L$(LOCAL_PATH)/ffmpeg-0.7-rc1/opencore-amr_install/lib		\
+LOCAL_LDLIBS :=	-llog $(MY_X264_LDLIB)	\
+		-L$(MY_FFMPEG_INSTALL)/opencore-amr_install/lib		\
 		-lc -lm -ldl -lgcc -lz -lopencore-amrnb
 
 LOCAL_MODULE := android-media

@@ -6,6 +6,12 @@ if [ "" == "$ANDROID_NDK_HOME" ]; then
   exit 1;
 fi
 
+if [ "" == "$MY_FFMPEG_INSTALL" ]; then
+  echo "Please set MY_FFMPEG_INSTALL to the location where ffmpeg libraries should be installed.";
+  exit -1;
+fi
+
+
 MARK_FILE=config.mark
 
 #Check if must run
@@ -76,7 +82,7 @@ echo "configure opencore-amr"
 cd ..
 
 ./configure --target-os=linux \
-	--arch=arm \
+	--arch=arm --prefix=${MY_FFMPEG_INSTALL} \
 	--enable-cross-compile \
 	--cc=$ARM_TOOL/bin/$abi-gcc \
 	--cross-prefix=$ARM_TOOL/bin/$abi- \
