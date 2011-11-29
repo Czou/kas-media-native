@@ -3,7 +3,7 @@
 # ensure ANDROID_NDK_HOME is set
 if [ "" == "$ANDROID_NDK_HOME" ]; then
   echo "Please set ANDROID_NDK_HOME to your Android Native Development Kit path.";
-  exit 1;
+  exit -1;
 fi
 
 if [ "" == "$MY_FFMPEG_INSTALL" ]; then
@@ -13,6 +13,11 @@ fi
 
 if [ "" == "$MY_AMR_SOURCE" ]; then
   echo "Please set MY_AMR_SOURCE to the location where AMR source code is located.";
+  exit -1;
+fi
+
+if [[ "$USE_X264_TREE" != "" && "" == "$MY_X264_INSTALL" ]]; then
+  echo "Please set MY_X264_INSTALL to the location where x264 should be installed.";
   exit -1;
 fi
 
@@ -54,7 +59,7 @@ ARM_LIBO=$ARM_TOOL/lib/gcc/$abi/$gccvers
 
 #export USE_X264_TREE=x264-0.106.1741
 if [ "" == "$USE_X264_TREE" ]; then
-  echo "sin x264=$USE_X264_TREE"
+  echo "configure a LGPL ffmpeg, without H264 encoding support"
   export X264_LIB_INC=;
   export X264_LIB_LIB=;
   export X264_C_EXTRA=;
@@ -62,11 +67,10 @@ if [ "" == "$USE_X264_TREE" ]; then
   export X264_L=;
   export X264_CONFIGURE_OPTS='--disable-gpl --disable-libx264';
 else
-  echo "con x264=$USE_X264_TREE"
+  echo "configure a GPL ffmpeg, with H264 encoding support at $USE_X264_TREE"
   export X264_SRC=$USE_X264_TREE;
-  export X264_INSTALL_DIR=$PWD/x264install;
-  export X264_LIB_INC=$X264_INSTALL_DIR/include;
-  export X264_LIB_LIB=$X264_INSTALL_DIR/lib;
+  export X264_LIB_INC=$MY_X264_INSTALL/include;
+  export X264_LIB_LIB=$MY_X264_INSTALL/lib;
   export X264_C_EXTRA="-I$X264_LIB_INC";
   export X264_LD_EXTRA="-L$X264_LIB_LIB -rpath-link=$X264_LIB_LIB";
   export X264_L=-lx264;

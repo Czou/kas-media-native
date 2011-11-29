@@ -6,10 +6,9 @@ export MY_AMR_SOURCE := $(MY_FFMPEG_SOURCE)/opencore-amr-0.1.2
 export MY_AMR_INSTALL := $(MY_FFMPEG_INSTALL)/opencore-amr_install
 
 ifdef USE_X264_TREE
-	$(info "GPL version, with H264 encoding support")
-	MY_X264_INSTALL := $(MY_FFMPEG_INSTALL)/x264install
-	MY_X264_C_INCLUDE := $(MY_X264_INSTALL)/include
-	MY_X264_LDLIB := -L$(MY_X264_INSTALL)/lib -lx264
+	export MY_X264_INSTALL := $(MY_FFMPEG_INSTALL)/x264_install
+	export MY_X264_C_INCLUDE := $(MY_X264_INSTALL)/include
+	export MY_X264_LDLIB := -L$(MY_X264_INSTALL)/lib -lx264
 endif
 
 %/config.mak: force

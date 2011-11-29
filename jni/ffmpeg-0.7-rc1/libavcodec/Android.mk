@@ -5,7 +5,7 @@ LOCAL_SRC_FILES := $(FFFILES)
 LOCAL_C_INCLUDES :=		\
 	$(LOCAL_PATH)		\
 	$(LOCAL_PATH)/..	\
-	$(LOCAL_PATH)/../x264install/include	\
+	$(MY_X264_C_INCLUDE)	\
 	$(MY_AMR_INSTALL)/include
 LOCAL_CFLAGS += $(FFCFLAGS)
 LOCAL_LDLIBS := -lz -L$(MY_AMR_INSTALL)/lib -lopencore-amrnb
