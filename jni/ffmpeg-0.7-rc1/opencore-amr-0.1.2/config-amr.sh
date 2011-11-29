@@ -16,12 +16,6 @@ export abi=arm-linux-androideabi;
 export gccvers=4.4.3
 echo "NDK=$(cat $ANDROID_NDK_HOME/RELEASE.TXT); $abi-$gccvers ABI";
 
-PLATFORM=$ANDROID_NDK_HOME/platforms/android-8/arch-arm
-ARM_INC=$PLATFORM/usr/include
-ARM_LIB=$PLATFORM/usr/lib
-ARM_TOOL=$ANDROID_NDK_HOME/toolchains/$abi-$gccvers/prebuilt/linux-x86
-ARM_LIBO=$ARM_TOOL/lib/gcc/$abi/$gccvers
-
 export LD="$ARM_TOOL/bin/$abi-ld"
 export CC="$ARM_TOOL/bin/$abi-gcc"
 export CXX="$ARM_TOOL/bin/$abi-g++"
