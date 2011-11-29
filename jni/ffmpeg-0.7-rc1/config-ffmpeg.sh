@@ -57,6 +57,11 @@ export ARM_LIB=$PLATFORM/usr/lib
 export ARM_TOOL=$ANDROID_NDK_HOME/toolchains/$abi-$gccvers/prebuilt/linux-x86
 export ARM_LIBO=$ARM_TOOL/lib/gcc/$abi/$gccvers
 
+export MY_CFLAGS="-I$ARM_INC -DANDROID -fpic -mthumb-interwork -ffunction-sections \
+		-funwind-tables -fstack-protector -fno-short-enums -D__ARM_ARCH_7A__ \
+		-Wno-psabi -march=armv7-a -msoft-float -mthumb -Os -O -fomit-frame-pointer \
+		-fno-strict-aliasing -finline-limit=64 -Wa,--noexecstack -MMD -MP "
+
 #export USE_X264_TREE=x264-0.106.1741
 if [ "" == "$USE_X264_TREE" ]; then
   echo "configure a LGPL ffmpeg, without H264 encoding support"
@@ -109,9 +114,8 @@ cd ..
 	--disable-avdevice \
 	--disable-avfilter \
 	--disable-devices \
-	--extra-cflags="-fPIC -DANDROID " \
-	--extra-cflags="-I$ARM_INC -I$AMR_LIB_INC $X264_C_EXTRA " \
-	--extra-cflags="-fpic -mthumb-interwork -ffunction-sections -funwind-tables -fstack-protector -fno-short-enums -D__ARM_ARCH_5__ -D__ARM_ARCH_5T__ -D__ARM_ARCH_5E__ -D__ARM_ARCH_5TE__  -Wno-psabi -march=armv5te -mtune=xscale -msoft-float -mthumb -Os -fomit-frame-pointer -fno-strict-aliasing -finline-limit=64 -DANDROID  -Wa,--noexecstack -MMD -MP " \
+	--extra-cflags="-I$AMR_LIB_INC $X264_C_EXTRA " \
+	--extra-cflags="$MY_CFLAGS" \
 	--extra-ldflags=" -Wl,-T,$ARM_TOOL/$abi/lib/ldscripts/$armelf -Wl,-rpath-link=$ARM_LIB -L$ARM_LIB -nostdlib $ARM_TOOL/lib/gcc/$abi/$gccvers/crtbegin.o $ARM_LIBO/crtend.o -lc -lm -ldl " \
 	--extra-ldflags="-L$ARM_LIBO $X264_LD_EXTRA -L$AMR_LIB_LIB -Wl,-nostdlib -Bdynamic  -Wl,--no-undefined -Wl,-z,noexecstack  -Wl,-z,nocopyreloc -Wl,-soname,/system/lib/libz.so -Wl,-rpath-link=$ARM_LIB,-dynamic-linker=/system/bin/linker -L$ARM_LIB -nostdlib $ARM_LIB/crtbegin_dynamic.o $ARM_LIB/crtend_android.o " \
 	--extra-libs="$X264_L -lgcc -lopencore-amrnb " $X264_CONFIGURE_OPTS --enable-libopencore-amrnb \
