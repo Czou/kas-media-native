@@ -11,6 +11,10 @@ if [ "" == "$MY_FFMPEG_INSTALL" ]; then
   exit -1;
 fi
 
+if [ "" == "$MY_AMR_SOURCE" ]; then
+  echo "Please set MY_AMR_SOURCE to the location where AMR source code is located.";
+  exit -1;
+fi
 
 MARK_FILE=config.mark
 
@@ -73,12 +77,10 @@ else
   export X264_CONFIGURE_OPTS='--enable-gpl --enable-libx264';
 fi
 
-AMR_SRC=opencore-amr-0.1.2
-AMR_INSTALL_DIR=$PWD/opencore-amr_install
-AMR_LIB_INC=$AMR_INSTALL_DIR/include
-AMR_LIB_LIB=$AMR_INSTALL_DIR/lib
-cd $AMR_SRC
-echo "configure opencore-amr"
+AMR_LIB_INC=$MY_AMR_INSTALL/include
+AMR_LIB_LIB=$MY_AMR_INSTALL/lib
+cd $MY_AMR_SOURCE
+echo "configure OpenCore AMR library"
 ./config-amr.sh || exit -1
 cd ..
 
