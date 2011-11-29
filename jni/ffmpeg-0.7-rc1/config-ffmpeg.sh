@@ -88,7 +88,7 @@ else
   echo "configure x264";
   ./config-x264.sh || exit -1;
   cd ..;
-  export X264_CONFIGURE_OPTS='--enable-gpl --enable-libx264';
+  export X264_CONFIGURE_OPTS='--enable-gpl --enable-libx264 --enable-encoder=libx264';
 fi
 
 AMR_LIB_INC=$MY_AMR_INSTALL/include
@@ -112,6 +112,7 @@ cd ..
 	--enable-version3 \
 	--disable-nonfree \
 	--disable-stripping \
+	--disable-doc \
 	--disable-ffplay \
 	--disable-ffmpeg \
 	--disable-ffprobe \
@@ -119,10 +120,28 @@ cd ..
 	--disable-avdevice \
 	--disable-avfilter \
 	--disable-devices \
+	--disable-encoders \
+	--enable-encoder=h263p --enable-encoder=mpeg4 \
+	--enable-encoder=libopencore_amrnb --enable-encoder=mp2 --enable-encoder=aac \
+	--disable-muxers --enable-muxer=rtp \
+	--disable-protocols --enable-protocol=rtp \
 	--extra-cflags="-I$AMR_LIB_INC $X264_C_EXTRA " \
 	--extra-cflags="$MY_CFLAGS" \
 	--extra-ldflags="$MY_LDFLAGS $X264_LD_EXTRA -L$AMR_LIB_LIB -Wl,-T,$ARM_TOOL/$abi/lib/ldscripts/$armelf \
 			$ARM_TOOL/lib/gcc/$abi/$gccvers/crtbegin.o $ARM_LIBO/crtend.o -L$ARM_LIBO " \
 	--extra-libs="$X264_L -lgcc -lopencore-amrnb " $X264_CONFIGURE_OPTS --enable-libopencore-amrnb \
+
+
+#	--disable-everything \
+
+#	--disable-decoders --enable-decoder=rawvideo \
+#	--enable-decoder=h263 --enable-decoder=mpeg4 --enable-decoder=h264 \
+#	--enable-decoder=libopencore_amrnb --enable-decoder=mp2 --enable-decoder=aac \
+#		error: undefined reference to `ff_vorbis_channel_layouts
+
+
+#	--disable-filters
+#		error: x264_install/include not found
+
 
 
