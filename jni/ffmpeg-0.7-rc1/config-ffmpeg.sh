@@ -26,7 +26,8 @@ else
   OLD_ANDROID_NDK_HOME=""
 fi
 
-if [[ "$OLD_USE_X264_TREE" = "$USE_X264_TREE" && "$OLD_ANDROID_NDK_HOME" = "$ANDROID_NDK_HOME" ]]
+#if [[ "$OLD_USE_X264_TREE" = "$USE_X264_TREE" && "$OLD_ANDROID_NDK_HOME" = "$ANDROID_NDK_HOME" ]]
+if [ -f config.mak ];
 then
   echo "No need to run config again, exiting..."
   exit 0;
