@@ -63,7 +63,8 @@ Java_com_kurento_kas_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 	AVFormatContext *pFormatCtx = NULL;
 	AVCodecContext *pDecodecCtxVideo = NULL;
 	AVCodec *pDecodecVideo = NULL;
-	AVFrame *pFrame, *pFrameRGB;
+	AVFrame *pFrame = NULL;
+	AVFrame *pFrameRGB = NULL;
 	
 	AVPacket avpkt;
 	uint8_t *avpkt_data_init;
