@@ -142,52 +142,12 @@ static int open_video(AVFormatContext *oc, AVStream *st)
 }
 
 
-
-
-//Based on opt_preset from ffmpeg.c
-static int opt_preset(const char *preset_file)
-{
-	FILE *f = NULL;
-	char tmp[1000], tmp2[1000], line[1000];
-	int i;
-	
-	f = fopen(preset_file, "r");
-	
-	if(!f){
-		snprintf(buf, sizeof(buf), "File for preset '%s' not found", preset_file);
-		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
-		return -1;
-	}
-
-	while(!feof(f)){
-		int e= fscanf(f, "%999[^\n]\n", line) - 1;
-		if(line[0] == '#' && !e)
-			continue;
-		e|= sscanf(line, "%999[^=]=%999[^\n]\n", tmp, tmp2) - 2;
-		if(e){
-			snprintf(buf, sizeof(buf), "%s: Invalid syntax: '%s'", preset_file, line);
-			__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
-			return -1;
-		}
-		if(opt_default(tmp, tmp2) < 0){
-			snprintf(buf, sizeof(buf), "%s: Invalid option or argument: '%s', parsed as '%s' = '%s'", preset_file, line, tmp, tmp2);
-			__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
-			return -1;
-		}
-	}
-
-	fclose(f);
-		
-	return 0;
-}
-
-
 /**
  * add a video output stream
  * see new_video_stream in ffmpeg.c
  */
 static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id, int width, int height,
-				int frame_rate_num, int frame_rate_den, int bit_rate, int gop_size, int qmax, const char *preset_file)
+				int frame_rate_num, int frame_rate_den, int bit_rate, int gop_size, int qmax)
 {
 	AVCodecContext *c;
 	AVStream *st;
@@ -254,10 +214,8 @@ __android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 		the motion of the chroma plane does not match the luma plane. */
 		c->mb_decision=2;
 	}
-	if((c->codec_id == CODEC_ID_H264) && preset_file) {
-		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "Apply presets");
-		opt_preset(preset_file);
-		set_context_opts(c, avcodec_opts[AVMEDIA_TYPE_VIDEO], AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM);
+	if(c->codec_id == CODEC_ID_H264) {
+		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "Apply libx264 params.");
 		
 
 AVCodecContext *pCodecCtx = c;
@@ -301,12 +259,11 @@ jint
 Java_com_kurento_kas_media_tx_MediaTx_initVideo(JNIEnv* env,
 			jobject thiz,
 			jstring outfile, jint width, jint height, jint frame_rate_num, jint frame_rate_den,
-			jint bit_rate, jint gop_size, jint qmax, jint codecId, jint payload_type, jstring presetFile)
+			jint bit_rate, jint gop_size, jint qmax, jint codecId, jint payload_type)
 {
 	int i, ret;
 	
 	const char *pOutFile = NULL;
-	const char *pPresetFile = NULL;
 	URLContext *urlContext;
 	
 	pthread_mutex_lock(&mutex);
@@ -326,8 +283,6 @@ Java_com_kurento_kas_media_tx_MediaTx_initVideo(JNIEnv* env,
     		ret = -1; // OutOfMemoryError already thrown
     		goto end;
     	}
-    	
-    	pPresetFile = (*env)->GetStringUTFChars(env, presetFile, NULL);
 	
 	if ( (ret= init_media()) != 0) {
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Couldn't init media");
@@ -368,7 +323,7 @@ Java_com_kurento_kas_media_tx_MediaTx_initVideo(JNIEnv* env,
 	video_st = NULL;
 	
 	if (fmt->video_codec != CODEC_ID_NONE) {
-		video_st = add_video_stream(oc, fmt->video_codec, width, height, frame_rate_num, frame_rate_den, bit_rate, gop_size, qmax, pPresetFile);
+		video_st = add_video_stream(oc, fmt->video_codec, width, height, frame_rate_num, frame_rate_den, bit_rate, gop_size, qmax);
 		if(!video_st) {
 			ret = -3;
 			goto end;
@@ -426,9 +381,8 @@ Java_com_kurento_kas_media_tx_MediaTx_initVideo(JNIEnv* env,
 	
 	RTPMuxContext *rptmc = oc->priv_data;
 	rptmc->payload_type = payload_type;
-	
+
 	(*env)->ReleaseStringUTFChars(env, outfile, pOutFile);
-	(*env)->ReleaseStringUTFChars(env, presetFile, pPresetFile);
 	
 	ret = 0;
 	
