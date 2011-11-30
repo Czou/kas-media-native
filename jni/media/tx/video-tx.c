@@ -185,23 +185,6 @@ static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id, in
 
 	c->rc_buffer_size = INT_MAX;	//((c->bit_rate * (int64_t)c->time_base.num) / (int64_t)c->time_base.den) + 1;
 
-snprintf(buf, sizeof(buf), "bit_rate: %d", c->bit_rate);
-__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
-
-snprintf(buf, sizeof(buf), "rc_min_rate: %d", c->rc_min_rate);
-__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
-snprintf(buf, sizeof(buf), "rc_max_rate: %d", c->rc_max_rate);
-__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
-snprintf(buf, sizeof(buf), "gop_size: %d\tkeyint_min: %d\tmax_b_frames: %d", c->gop_size, c->keyint_min, c->max_b_frames);
-__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
-
-snprintf(buf, sizeof(buf), "qmin: %d", c->qmin);
-__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
-snprintf(buf, sizeof(buf), "qmax: %d", c->qmax);
-__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
-snprintf(buf, sizeof(buf), "qcompress: %d", c->qcompress);
-__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
-
 
 
 	if (c->codec_id == CODEC_ID_MPEG2VIDEO) {
@@ -245,7 +228,26 @@ pCodecCtx->qblur=0.5;
 pCodecCtx->rc_min_rate = 1000000;
 
 	}
-	
+
+
+snprintf(buf, sizeof(buf), "bit_rate: %d", c->bit_rate);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+
+snprintf(buf, sizeof(buf), "rc_min_rate: %d", c->rc_min_rate);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+snprintf(buf, sizeof(buf), "rc_max_rate: %d", c->rc_max_rate);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+snprintf(buf, sizeof(buf), "gop_size: %d\tkeyint_min: %d\tmax_b_frames: %d", c->gop_size, c->keyint_min, c->max_b_frames);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+
+snprintf(buf, sizeof(buf), "qmin: %d", c->qmin);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+snprintf(buf, sizeof(buf), "qmax: %d", c->qmax);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+snprintf(buf, sizeof(buf), "qcompress: %d", c->qcompress);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+
+
 
 	
 	// some formats want stream headers to be separate
