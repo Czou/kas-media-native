@@ -123,8 +123,6 @@ cd ..
 	--disable-encoders \
 	--enable-encoder=h263p --enable-encoder=mpeg4 \
 	--enable-encoder=libopencore_amrnb --enable-encoder=mp2 --enable-encoder=aac \
-	--disable-muxers --enable-muxer=rtp \
-	--disable-protocols --enable-protocol=rtp \
 	--extra-cflags="-I$AMR_LIB_INC $X264_C_EXTRA " \
 	--extra-cflags="$MY_CFLAGS" \
 	--extra-ldflags="$MY_LDFLAGS $X264_LD_EXTRA -L$AMR_LIB_LIB -Wl,-T,$ARM_TOOL/$abi/lib/ldscripts/$armelf \
@@ -133,6 +131,9 @@ cd ..
 
 
 #	--disable-everything \
+
+#	--disable-muxers --enable-muxer=rtp \
+#	--disable-protocols --enable-protocol=rtp \
 
 #	--disable-decoders --enable-decoder=rawvideo \
 #	--enable-decoder=h263 --enable-decoder=mpeg4 --enable-decoder=h264 \
