@@ -19,6 +19,10 @@ include $(call all-subdir-makefiles)
 LOCAL_PATH := $(TOP_LOCAL_PATH)
 include $(CLEAR_VARS)
 
+ifdef USE_X264_TREE
+	LOCAL_CFLAGS += -DUSE_X264
+endif
+
 LOCAL_C_INCLUDES := 	$(MY_FFMPEG_INSTALL)	\
 			$(MY_X264_C_INCLUDE)	\
 			$(MY_AMR_INSTALL)include	\
