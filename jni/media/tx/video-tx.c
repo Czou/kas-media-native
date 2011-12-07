@@ -270,8 +270,8 @@ Java_com_kurento_kas_media_tx_MediaTx_initVideo(JNIEnv* env,
 	
 	pthread_mutex_lock(&mutex);
 
-#ifndef USE_X264_TREE
-	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "USE_X264_TREE no def");
+#ifndef USE_X264
+	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "USE_X264 no def");
 	/* TODO: Improve this hack to disable H264 */
 	if (VIDEO_CODECS[codecId] == CODEC_ID_H264) {
 		__android_log_write(ANDROID_LOG_WARN, LOG_TAG, "H264 not supported");
