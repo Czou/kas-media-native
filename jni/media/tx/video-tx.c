@@ -198,35 +198,29 @@ static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id, in
 		c->mb_decision=2;
 	}
 	if(c->codec_id == CODEC_ID_H264) {
-		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "Apply libx264 params.");
-		
-
-AVCodecContext *pCodecCtx = c;
-
-//pCodecCtx->bit_rate=384000;
-//pCodecCtx->time_base.den=20;
-pCodecCtx->gop_size=0;//200;
-//pCodecCtx->height=288;
-//pCodecCtx->width=352;
-pCodecCtx->max_b_frames=0;
-pCodecCtx->max_qdiff=4;
-pCodecCtx->me_range=16;
-pCodecCtx->qmin=10;
-pCodecCtx->qmax=41;
-pCodecCtx->qcompress=0.6;
-pCodecCtx->keyint_min=10;
-pCodecCtx->trellis=0;
-
-pCodecCtx->level=13; //Level 1.3
-pCodecCtx->profile=66; //Baseline
-
-pCodecCtx->me_method=7;
-pCodecCtx->thread_count=2;
-pCodecCtx->qblur=0.5;
-//pCodecCtx->pix_fmt=0; //YUV420P
-
-pCodecCtx->rc_min_rate = 1000000;
-
+		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "x264 config...");
+		c->coder_type = 0; // coder=0
+		c->weighted_p_pred = 0; // wpredp=0
+		c->aq_mode=0; // aq_mode=0
+		c->b_frame_strategy = 0; // b_strategy=0
+		c->me_method = ME_EPZS; // me_method=dia
+		c->me_range = 16; // me_range=16
+		c->partitions &= ~X264_PART_I4X4 & ~X264_PART_I8X8 & ~X264_PART_P8X8 & ~X264_PART_P4X4 & ~X264_PART_B8X8; // partitions=-parti8x8-parti4x4-partp8x8-partp4x4-partb8x8
+		c->rc_lookahead = 0; // rc_lookahead=0
+		c->refs = 1; // refs=1
+		c->scenechange_threshold = 0; // sc_threshold=0
+		c->me_subpel_quality = 0; // subq=0
+		c->directpred = 1; // directpred=1
+		c->trellis = 0; // trellis=0
+		c->flags &= ~CODEC_FLAG_INTERLACED_DCT & ~CODEC_FLAG_LOOP_FILTER; // flags=-ildct-loop
+		c->flags2 &= ~CODEC_FLAG2_8X8DCT & ~CODEC_FLAG2_MBTREE & ~CODEC_FLAG2_MIXED_REFS & ~CODEC_FLAG2_WPRED; // flags2=-dct8x8-mbtree-mixed_refs-wpred
+		c->qcompress = 0.6;
+/*		c->gop_size = 5; // g=25
+		c->keyint_min = 5; // keyint_min=5
+		c->max_b_frames = 0; // bf=0
+		c->qmin = 40; // qmin=10
+		c->qmax = 40; // qmax=51
+*/
 	}
 
 
