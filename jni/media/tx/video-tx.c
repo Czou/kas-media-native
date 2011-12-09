@@ -174,14 +174,13 @@ static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id, in
 	of which frame timestamps are represented. for fixed-fps content,
 	timebase should be 1/framerate and timestamp increments should be
 	identically 1. */
-	c->time_base.den = frame_rate_num;	//15;
+	c->time_base.den = frame_rate_num;
 	c->time_base.num = frame_rate_den;
-	c->gop_size = gop_size;//12; /* emit one intra frame every twelve frames at most */
+	c->gop_size = gop_size;
 	c->keyint_min = gop_size;
 	c->max_b_frames = 0;
 	c->qmax = qmax;
 	c->pix_fmt = PIX_FMT_YUV420P;
-//	c->pix_fmt = PIX_FMT_NV21;
 
 	c->rc_buffer_size = INT_MAX;	//((c->bit_rate * (int64_t)c->time_base.num) / (int64_t)c->time_base.den) + 1;
 
@@ -198,7 +197,6 @@ static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id, in
 		c->mb_decision=2;
 	}
 	if(c->codec_id == CODEC_ID_H264) {
-		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "x264 config...");
 		c->coder_type = 0; // coder=0
 		c->weighted_p_pred = 0; // wpredp=0
 		c->aq_mode=0; // aq_mode=0
@@ -215,12 +213,6 @@ static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id, in
 		c->flags &= ~CODEC_FLAG_INTERLACED_DCT & ~CODEC_FLAG_LOOP_FILTER; // flags=-ildct-loop
 		c->flags2 &= ~CODEC_FLAG2_8X8DCT & ~CODEC_FLAG2_MBTREE & ~CODEC_FLAG2_MIXED_REFS & ~CODEC_FLAG2_WPRED; // flags2=-dct8x8-mbtree-mixed_refs-wpred
 		c->qcompress = 0.6;
-/*		c->gop_size = 5; // g=25
-		c->keyint_min = 5; // keyint_min=5
-		c->max_b_frames = 0; // bf=0
-		c->qmin = 40; // qmin=10
-		c->qmax = 40; // qmax=51
-*/
 	}
 
 
