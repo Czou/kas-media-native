@@ -55,12 +55,13 @@ Java_com_kurento_kas_media_rx_MediaRx_stopAudioRx(JNIEnv* env,
 
 jint
 Java_com_kurento_kas_media_rx_MediaRx_startAudioRx(JNIEnv* env, jobject thiz,
-				jstring sdp_str, jobject audioPlayer)
+				jstring sdp_str, jint maxDelay, jobject audioPlayer)
 {
 	
 	const char *pSdpString = NULL;
 
 	AVFormatContext *pFormatCtx = NULL;
+	AVFormatParameters params, *ap = &params;
 	AVCodecContext *pDecodecCtxAudio = NULL;
 	AVCodec *pDecodecAudio = NULL;
 	
@@ -97,8 +98,12 @@ Java_com_kurento_kas_media_rx_MediaRx_startAudioRx(JNIEnv* env, jobject thiz,
 		}
 		pthread_mutex_unlock(&mutex);
 
+		pFormatCtx = avformat_alloc_context();
+		pFormatCtx->max_delay = maxDelay * 1000;
+		ap->prealloced_context = 1;
+
 		// Open audio file
-		if ( (ret = av_open_input_sdp(&pFormatCtx, pSdpString, NULL)) != 0 ) {
+		if ( (ret = av_open_input_sdp(&pFormatCtx, pSdpString, ap)) != 0 ) {
 			snprintf(buf, sizeof(buf), "Couldn't process sdp: %d", ret);
 			__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
 			av_strerror(ret, buf, sizeof(buf));
@@ -116,6 +121,9 @@ Java_com_kurento_kas_media_rx_MediaRx_startAudioRx(JNIEnv* env, jobject thiz,
 		} else
 			break;
 	}
+
+	snprintf(buf, sizeof(buf), "max_delay: %d ms", pFormatCtx->max_delay/1000);
+	__android_log_write(ANDROID_LOG_INFO, LOG_TAG, buf);
 
 	// Find the first audio stream
 	audioStream = -1;
