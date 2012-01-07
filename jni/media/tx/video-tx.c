@@ -147,7 +147,7 @@ static int open_video(AVFormatContext *oc, AVStream *st)
  * see new_video_stream in ffmpeg.c
  */
 static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id, int width, int height,
-				int frame_rate_num, int frame_rate_den, int bit_rate, int gop_size, int qmax)
+				int frame_rate_num, int frame_rate_den, int bit_rate, int gop_size)
 {
 	AVCodecContext *c;
 	AVStream *st;
@@ -181,10 +181,10 @@ static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id, in
 	c->gop_size = gop_size;
 	c->keyint_min = gop_size;
 	c->max_b_frames = 0;
-	c->qmax = qmax;
+	//c->qmax = qmax;
 	c->pix_fmt = PIX_FMT_YUV420P;
 
-	c->rc_buffer_size = INT_MAX;	//((c->bit_rate * (int64_t)c->time_base.num) / (int64_t)c->time_base.den) + 1;
+	//c->rc_buffer_size = INT_MAX;	//((c->bit_rate * (int64_t)c->time_base.num) / (int64_t)c->time_base.den) + 1;
 
 
 
@@ -252,7 +252,7 @@ jint
 Java_com_kurento_kas_media_tx_MediaTx_initVideo(JNIEnv* env,
 			jobject thiz,
 			jstring outfile, jint width, jint height, jint frame_rate_num, jint frame_rate_den,
-			jint bit_rate, jint gop_size, jint qmax, jint codecId, jint payload_type)
+			jint bit_rate, jint gop_size, jint codecId, jint payload_type)
 {
 	int i, ret;
 	
@@ -316,7 +316,7 @@ Java_com_kurento_kas_media_tx_MediaTx_initVideo(JNIEnv* env,
 	video_st = NULL;
 	
 	if (fmt->video_codec != CODEC_ID_NONE) {
-		video_st = add_video_stream(oc, fmt->video_codec, width, height, frame_rate_num, frame_rate_den, bit_rate, gop_size, qmax);
+		video_st = add_video_stream(oc, fmt->video_codec, width, height, frame_rate_num, frame_rate_den, bit_rate, gop_size);
 		if(!video_st) {
 			ret = -3;
 			goto end;
