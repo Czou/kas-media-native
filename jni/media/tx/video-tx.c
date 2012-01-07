@@ -164,8 +164,10 @@ static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id, in
 	
 	/* put sample parameters */
 	c->bit_rate = bit_rate;
-	c->rc_max_rate = bit_rate;
-	c->rc_min_rate = bit_rate;
+	//c->rc_max_rate = bit_rate;
+	//c->rc_min_rate = bit_rate;
+	c->qcompress = 0.0;
+	c->qblur = 0.0;
 	
 	/* resolution must be a multiple of two */
 	c->width = width;
@@ -230,9 +232,12 @@ snprintf(buf, sizeof(buf), "qmin: %d", c->qmin);
 __android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 snprintf(buf, sizeof(buf), "qmax: %d", c->qmax);
 __android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
-snprintf(buf, sizeof(buf), "qcompress: %d", c->qcompress);
+snprintf(buf, sizeof(buf), "qcompress: %f", c->qcompress);
 __android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
-
+snprintf(buf, sizeof(buf), "qblur: %f", c->qblur);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+snprintf(buf, sizeof(buf), "max_qdiff: %f", c->max_qdiff);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 
 
 	
