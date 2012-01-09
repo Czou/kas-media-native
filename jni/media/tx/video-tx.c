@@ -217,7 +217,12 @@ static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id, in
 		c->trellis = 0; // trellis=0
 		c->flags &= ~CODEC_FLAG_INTERLACED_DCT & ~CODEC_FLAG_LOOP_FILTER; // flags=-ildct-loop
 		c->flags2 &= ~CODEC_FLAG2_8X8DCT & ~CODEC_FLAG2_MBTREE & ~CODEC_FLAG2_MIXED_REFS & ~CODEC_FLAG2_WPRED; // flags2=-dct8x8-mbtree-mixed_refs-wpred
-		c->qcompress = 0.6;
+		//c->qcompress = 0.6;
+
+		//Ensure no default settings
+		c->qmin = 1;
+		c->qmax = 32;
+		c->max_qdiff = 4;
 	}
 
 
@@ -449,7 +454,7 @@ static int write_video_frame(AVFormatContext *oc, AVStream *st, int srcWidth, in
 		}
 	}
 
-	if (ret != 0)
+	if (ret < 0)
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Error while writing video frame");
 
 	return ret;
