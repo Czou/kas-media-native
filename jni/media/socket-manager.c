@@ -22,6 +22,7 @@
  */
 
 #include "socket-manager.h"
+#include <init-media.h>
 
 #include <jni.h>
 #include <pthread.h>
@@ -52,7 +53,7 @@ static int nVideo;
 static URLContext*
 get_connection(int media_type, int port) {
 	URLContext *urlContext = NULL;
-	AVFormatContext *s;
+	AVFormatContext *s = NULL;
 
 	static char rtp[256];
 
