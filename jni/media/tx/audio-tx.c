@@ -32,8 +32,9 @@
 #include "libavformat/avformat.h"
 #include "libswscale/swscale.h"
 #include "libavcodec/opt.h"
-
 #include "libavformat/rtpenc.h"
+#include "libavformat/rtpdec.h"
+#include "libavformat/url.h"
 
 
 /*
@@ -132,7 +133,7 @@ Java_com_kurento_kas_media_tx_MediaTx_initAudio (JNIEnv* env,
 						jobject thiz,
 						jstring outfile, jint codec_id, jint sample_rate, jint bit_rate, jint payload_type)
 {
-	int i, ret;
+	int ret;
 	
 	const char *pOutFile = NULL;
 	URLContext *urlContext;
@@ -156,7 +157,7 @@ Java_com_kurento_kas_media_tx_MediaTx_initAudio (JNIEnv* env,
 	}
 	avformat_opts = avformat_alloc_context();
 	sws_opts = sws_getContext(16,16,0, 16,16,0, sws_flags, NULL,NULL,NULL);
-+/	
+*/
 	/* auto detect the output format from the name. default is mp4. */
 	fmt = av_guess_format(NULL, pOutFile, NULL);
 	if (!fmt) {
