@@ -23,6 +23,7 @@
 
 #include <my-cmdutils.h>
 #include <init-media.h>
+#include <socket-manager.h>
 
 #include <jni.h>
 #include <pthread.h>
@@ -32,6 +33,8 @@
 #include "libswscale/swscale.h"
 #include "libavcodec/opt.h"
 #include "libavformat/rtpenc.h"
+#include "libavformat/rtpdec.h"
+#include "libavformat/url.h"
 
 /*
 	see	libavformat/output-example.c
@@ -236,7 +239,7 @@ snprintf(buf, sizeof(buf), "qcompress: %f", c->qcompress);
 __android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 snprintf(buf, sizeof(buf), "qblur: %f", c->qblur);
 __android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
-snprintf(buf, sizeof(buf), "max_qdiff: %f", c->max_qdiff);
+snprintf(buf, sizeof(buf), "max_qdiff: %d", c->max_qdiff);
 __android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 
 
@@ -254,7 +257,7 @@ Java_com_kurento_kas_media_tx_MediaTx_initVideo(JNIEnv* env,
 			jstring outfile, jint width, jint height, jint frame_rate_num, jint frame_rate_den,
 			jint bit_rate, jint gop_size, jint codecId, jint payload_type)
 {
-	int i, ret;
+	int ret;
 	
 	const char *pOutFile = NULL;
 	URLContext *urlContext;
@@ -287,7 +290,7 @@ Java_com_kurento_kas_media_tx_MediaTx_initVideo(JNIEnv* env,
 	}
 	avformat_opts = avformat_alloc_context();
 	sws_opts = sws_getContext(16,16,0, 16,16,0, sws_flags, NULL,NULL,NULL);a
-+/	
+*/
 	/* auto detect the output format from the name. default is mp4. */
 	fmt = av_guess_format(NULL, pOutFile, NULL);
 	if (!fmt) {
@@ -410,7 +413,7 @@ static int write_video_frame(AVFormatContext *oc, AVStream *st, int srcWidth, in
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Cannot initialize the conversion context");
 		return -1;
 	}
-	sws_scale(img_convert_ctx, tmp_picture->data, tmp_picture->linesize,
+	sws_scale(img_convert_ctx, (const uint8_t* const*)tmp_picture->data, tmp_picture->linesize,
 		0, c->height, picture->data, picture->linesize);
 	sws_freeContext(img_convert_ctx);
 	
@@ -446,10 +449,10 @@ static int write_video_frame(AVFormatContext *oc, AVStream *st, int srcWidth, in
 		}
 	}
 
-	if (ret != 0) {
+	if (ret != 0)
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Error while writing video frame");
-		return ret;
-	}
+
+	return ret;
 }
 
 jint
@@ -483,13 +486,13 @@ Java_com_kurento_kas_media_tx_MediaTx_putVideoFrame(JNIEnv* env,
 		
 	
 	if (write_video_frame(oc, video_st,  width, height) < 0) {
-		(*env)->ReleaseByteArrayElements(env, frame, picture_buf, 0);
+		(*env)->ReleaseByteArrayElements(env, frame, (jbyte*)picture_buf, 0);
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Could not write video frame");
 		ret = -2;
 		goto end;
 	}
 
-	(*env)->ReleaseByteArrayElements(env, frame, picture_buf, 0);
+	(*env)->ReleaseByteArrayElements(env, frame, (jbyte*)picture_buf, 0);
 	av_free(picture2_buf);
 	ret = 0;
 	
