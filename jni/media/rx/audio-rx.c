@@ -22,6 +22,7 @@
  */
 
 #include <init-media.h>
+#include <socket-manager.h>
 
 #include <jni.h>
 #include <pthread.h>
