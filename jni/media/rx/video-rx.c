@@ -22,6 +22,7 @@
  */
 
 #include <init-media.h>
+#include <socket-manager.h>
 
 #include <jni.h>
 #include <pthread.h>
@@ -70,10 +71,10 @@ Java_com_kurento_kas_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 	AVPacket avpkt;
 	uint8_t *avpkt_data_init;
 	
-	jintArray out_buffer_video;
+	jintArray out_buffer_video = NULL;
 	uint8_t *buffer = NULL;
 	
-	int i, ret, audioStream, videoStream, buffer_nbytes, picture_nbytes, len, got_picture;
+	int i, ret, videoStream, buffer_nbytes, picture_nbytes, len, got_picture;
 	int current_width, current_height;
 	
 	struct SwsContext *img_convert_ctx;
@@ -182,6 +183,8 @@ Java_com_kurento_kas_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 		goto end;
 	}
 
+	picture_nbytes = 0;
+
 	current_width = -1;
 	current_height = -1;
 	buffer_nbytes = -1;
@@ -203,7 +206,7 @@ Java_com_kurento_kas_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 	snprintf(buf, sizeof(buf), "avpkt->dts: %d", avpkt.dts);
 	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
-	/*snprintf(buf, sizeof(buf), "avpkt->size: %d", avpkt.size);
+	snprintf(buf, sizeof(buf), "avpkt->size: %d", avpkt.size);
 	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 	*/
 				while (avpkt.size > 0) {
@@ -251,11 +254,11 @@ Java_com_kurento_kas_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 							ret = -9;
 							goto end;
 						}
-						sws_scale(img_convert_ctx, pFrame->data, pFrame->linesize, 0,
+						sws_scale(img_convert_ctx, (const uint8_t* const*)pFrame->data, pFrame->linesize, 0,
 								current_height, ((AVPicture*) pFrameRGB)->data,
 								((AVPicture*) pFrameRGB)->linesize);
 						sws_freeContext(img_convert_ctx);
-						(*env)->SetByteArrayRegion(env, out_buffer_video, 0, picture_nbytes, (jint *) pFrameRGB->data[0]);
+						(*env)->SetByteArrayRegion(env, out_buffer_video, 0, picture_nbytes, (jbyte*)pFrameRGB->data[0]);
 						(*env)->CallVoidMethod(env, videoPlayer, midVideo, out_buffer_video, current_width, current_height);
 					}
 					pthread_mutex_unlock(&mutex);
