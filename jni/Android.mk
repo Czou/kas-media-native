@@ -19,6 +19,8 @@ include $(call all-subdir-makefiles)
 LOCAL_PATH := $(TOP_LOCAL_PATH)
 include $(CLEAR_VARS)
 
+LOCAL_CFLAGS := -Wall -pedantic -std=c99
+
 ifdef USE_X264_TREE
 	LOCAL_CFLAGS += -DUSE_X264
 endif
