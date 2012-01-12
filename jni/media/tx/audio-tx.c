@@ -59,6 +59,11 @@ static AVOutputFormat *fmt;
 static AVFormatContext *oc;
 static AVStream *audio_st;
 
+static int frame_size;
+enum {
+	DEFAULT_FRAME_SIZE = 200,
+};
+
 
 ////////////////////////////////////////////////////////////////////////////////////////
 //INIT AUDIO
@@ -251,7 +256,12 @@ Java_com_kurento_kas_media_tx_MediaTx_initAudio (JNIEnv* env,
 
 	(*env)->ReleaseStringUTFChars(env, outfile, pOutFile);
 	
-	ret = audio_st->codec->frame_size;
+	if(audio_st->codec->frame_size > 1)
+		frame_size = audio_st->codec->frame_size;
+	else
+		frame_size = DEFAULT_FRAME_SIZE;
+
+	ret = frame_size;
 	
 end:
 	pthread_mutex_unlock(&mutex);
@@ -273,7 +283,7 @@ static int write_audio_frame(AVFormatContext *oc, AVStream *st, int16_t *samples
 
 	c = st->codec;
 	
-	pkt.size= avcodec_encode_audio(c, audio_outbuf, audio_outbuf_size, samples);
+	pkt.size= avcodec_encode_audio(c, audio_outbuf, frame_size, samples);
 	
 	if (c->coded_frame && c->coded_frame->pts != AV_NOPTS_VALUE)
 		pkt.pts= av_rescale_q(c->coded_frame->pts, c->time_base, st->time_base);
@@ -297,7 +307,7 @@ Java_com_kurento_kas_media_tx_MediaTx_putAudioSamples (JNIEnv* env,
 						jshortArray in_buffer, jint in_size)
 {
 	int16_t *samples;
-	int i, ret, nframes, frame_size;
+	int i, ret, nframes;
 	
 	//FIXME: controlar el tamaño del array pasado y levantar un error si no es correcto.
 	pthread_mutex_lock(&mutex);
@@ -313,11 +323,8 @@ Java_com_kurento_kas_media_tx_MediaTx_putAudioSamples (JNIEnv* env,
     		ret = -2;
 		goto end;
     	}
-	
-	frame_size = audio_st->codec->frame_size;
+
 	nframes = in_size / frame_size;
-
-
 	for (i=0; i<nframes; i++) {
 		if( (ret=write_audio_frame(oc, audio_st, &samples[i*frame_size])) < 0) {
 			(*env)->ReleaseShortArrayElements(env, in_buffer, samples, 0);
