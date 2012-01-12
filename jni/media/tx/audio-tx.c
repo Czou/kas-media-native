@@ -49,8 +49,8 @@ static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 //static int sws_flags = SWS_BICUBIC;
 
 //Coupled with Java
-int AUDIO_CODECS[] = {CODEC_ID_AMR_NB, CODEC_ID_MP2, CODEC_ID_AAC};
-char* AUDIO_CODEC_NAMES[] = {"amr_nb", "mp2", "aac"};
+int AUDIO_CODECS[] = {CODEC_ID_AMR_NB, CODEC_ID_MP2, CODEC_ID_AAC, CODEC_ID_PCM_MULAW, CODEC_ID_PCM_ALAW};
+char* AUDIO_CODEC_NAMES[] = {"amr_nb", "mp2", "aac", "pcm_mulaw", "pcm_alaw"};
 
 static uint8_t *audio_outbuf;
 static int audio_outbuf_size;
