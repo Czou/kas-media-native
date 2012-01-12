@@ -122,7 +122,7 @@ cd ..
 	--disable-devices \
 	--disable-encoders \
 	--enable-encoder=h263p --enable-encoder=mpeg4 \
-	--enable-encoder=libopencore_amrnb --enable-encoder=mp2 --enable-encoder=aac \
+	--enable-encoder=libopencore_amrnb --enable-encoder=mp2 --enable-encoder=aac --enable-encoder=pcm_mulaw --enable-encoder=pcm_alaw \
 	--extra-cflags="-I$AMR_LIB_INC $X264_C_EXTRA " \
 	--extra-cflags="$MY_CFLAGS" \
 	--extra-ldflags="$MY_LDFLAGS $X264_LD_EXTRA -L$AMR_LIB_LIB -Wl,-T,$ARM_TOOL/$abi/lib/ldscripts/$armelf \
