@@ -69,7 +69,7 @@ Java_com_kurento_kas_media_rx_MediaRx_startAudioRx(JNIEnv* env, jobject thiz,
 	AVPacket avpkt;
 	uint8_t *avpkt_data_init;
 	
-	jintArray out_buffer_audio;
+	jintArray out_buffer_audio = NULL;
 	uint8_t outbuf[DATA_SIZE];
 
 	int i, ret, audioStream, out_size, len;
@@ -188,10 +188,7 @@ __android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 		ret = -7;
 		goto end;
 	}
-	
-	//Definir el tamaño de out_buffer
-	out_buffer_audio = (jbyteArray)(*env)->NewByteArray(env, DATA_SIZE);
-	
+
 	//READING THE DATA
 	for(;;) {
 		pthread_mutex_lock(&mutex);
@@ -228,6 +225,8 @@ __android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 						break;
 					}
 					if (out_size > 0) {
+						(*env)->DeleteLocalRef(env, out_buffer_audio);
+						out_buffer_audio = (jbyteArray)(*env)->NewByteArray(env, out_size);
 						(*env)->SetByteArrayRegion(env, out_buffer_audio, 0, out_size, (jbyte *) outbuf);
 						(*env)->CallVoidMethod(env, audioPlayer, midAudio, out_buffer_audio, out_size);
 					}
@@ -247,6 +246,7 @@ __android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 
 end:
 	(*env)->ReleaseStringUTFChars(env, sdp_str, pSdpString);
+	(*env)->DeleteLocalRef(env, out_buffer_audio);
 	
 	//Close the codec
 	if (pDecodecCtxAudio)
