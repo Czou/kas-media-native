@@ -123,9 +123,6 @@ Java_com_kurento_kas_media_rx_MediaRx_startAudioRx(JNIEnv* env, jobject thiz,
 			break;
 	}
 
-	snprintf(buf, sizeof(buf), "max_delay: %d ms", pFormatCtx->max_delay/1000);
-	__android_log_write(ANDROID_LOG_INFO, LOG_TAG, buf);
-
 	// Find the first audio stream
 	audioStream = -1;
 	for (i = 0; i < pFormatCtx->nb_streams; i++) {
@@ -158,8 +155,10 @@ Java_com_kurento_kas_media_rx_MediaRx_startAudioRx(JNIEnv* env, jobject thiz,
 		goto end;
 	}
 	
-snprintf(buf, sizeof(buf), "pDecodecAudio->name: %s", pDecodecAudio->name);
-__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+	snprintf(buf, sizeof(buf), "max_delay: %d ms", pFormatCtx->max_delay/1000);
+	__android_log_write(ANDROID_LOG_INFO, LOG_TAG, buf);
+	snprintf(buf, sizeof(buf), "codec: %s", pDecodecAudio->name);
+	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 	
 	
 	// Open audio codec
@@ -167,15 +166,11 @@ __android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 		ret = -6; // Could not open codec
 		goto end;
 	}
-	
-snprintf(
-	buf,
-	sizeof(buf),
-	"c->sample_rate: %d; c->Frame Size: %d; c->bit_rate: %d; c->FMT: %d; FMT S16 : %d ",
-	pDecodecCtxAudio->sample_rate, pDecodecCtxAudio->frame_size,
-	pDecodecCtxAudio->bit_rate, pDecodecCtxAudio->sample_fmt,
-	SAMPLE_FMT_S16);
-__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+
+	snprintf(buf, sizeof(buf), "Sample Rate: %d; Frame Size: %d; Bit Rate: %d",
+		pDecodecCtxAudio->sample_rate, pDecodecCtxAudio->frame_size,
+		pDecodecCtxAudio->bit_rate);
+	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 	
 	
 	
