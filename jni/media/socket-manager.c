@@ -228,11 +228,19 @@ jint Java_com_kurento_kas_media_ports_MediaPortManager_takeAudioLocalPort(
 	return rtp_get_local_rtp_port(urlContext);
 }
 
-void Java_com_kurento_kas_media_ports_MediaPortManager_releaseAudioLocalPort(
+jint Java_com_kurento_kas_media_ports_MediaPortManager_releaseAudioLocalPort(
 		JNIEnv* env, jobject thiz) {
+	int ret;
+
 	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "releaseAudioLocalPort");
 	if (pAudioFormatCtx && pAudioFormatCtx->pb)
 		free_connection(pAudioFormatCtx->pb->opaque);
+
+	pthread_mutex_lock(&mutex);
+	ret = nAudio;
+	pthread_mutex_unlock(&mutex);
+
+	return ret;
 }
 
 //VIDEO
@@ -244,17 +252,24 @@ get_video_connection(int videoPort) {
 
 jint Java_com_kurento_kas_media_ports_MediaPortManager_takeVideoLocalPort(
 		JNIEnv* env, jobject thiz, int videoPort) {
-
 	snprintf(buf, sizeof(buf), "takeVideoLocalPort Port: %d", videoPort);
 	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 	URLContext *urlContext = get_video_connection(videoPort);
 	return rtp_get_local_rtp_port(urlContext);
 }
 
-void Java_com_kurento_kas_media_ports_MediaPortManager_releaseVideoLocalPort(
+jint Java_com_kurento_kas_media_ports_MediaPortManager_releaseVideoLocalPort(
 		JNIEnv* env, jobject thiz) {
+	int ret;
+
 	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "releaseVideoLocalPort");
 	if (pVideoFormatCtx && pVideoFormatCtx->pb)
 		free_connection(pVideoFormatCtx->pb->opaque);
+
+	pthread_mutex_lock(&mutex);
+	ret = nVideo;
+	pthread_mutex_unlock(&mutex);
+
+	return ret;
 }
 
