@@ -61,7 +61,7 @@ static AVStream *audio_st;
 
 static int frame_size;
 enum {
-	DEFAULT_FRAME_SIZE = 200,
+	DEFAULT_FRAME_SIZE = 20, //milliseconds
 };
 
 
@@ -246,8 +246,7 @@ Java_com_kurento_kas_media_tx_MediaTx_initAudio (JNIEnv* env,
 	}
 	
 	oc->pb->opaque = urlContext;
-	
-	
+
 	/* write the stream header, if any */
 	av_write_header(oc);
 
@@ -263,10 +262,13 @@ Java_com_kurento_kas_media_tx_MediaTx_initAudio (JNIEnv* env,
 	if(audio_st->codec->frame_size > 1)
 		frame_size = audio_st->codec->frame_size;
 	else
-		frame_size = DEFAULT_FRAME_SIZE;
+		frame_size = sample_rate * DEFAULT_FRAME_SIZE / 1000;
 
 	ret = frame_size;
 	
+	snprintf(buf, sizeof(buf), "Audio frame size: %d", frame_size);
+	__android_log_write(ANDROID_LOG_INFO, LOG_TAG, buf);
+
 end:
 	pthread_mutex_unlock(&mutex);
 	return ret;
