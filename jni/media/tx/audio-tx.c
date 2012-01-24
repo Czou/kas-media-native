@@ -253,6 +253,10 @@ Java_com_kurento_kas_media_tx_MediaTx_initAudio (JNIEnv* env,
 
 	RTPMuxContext *rptmc = oc->priv_data;
 	rptmc->payload_type = payload_type;
+	rptmc->max_frames_per_packet = 1;
+
+	snprintf(buf, sizeof(buf), "Frames per packet: %d", rptmc->max_frames_per_packet);
+	__android_log_write(ANDROID_LOG_INFO, LOG_TAG, buf);
 
 	(*env)->ReleaseStringUTFChars(env, outfile, pOutFile);
 	
