@@ -448,7 +448,7 @@ static int write_video_frame(AVFormatContext *oc, AVStream *st, int srcWidth, in
 			pkt.size= out_size;
 		
 			/* write the compressed frame in the media file */
-			ret = av_interleaved_write_frame(oc, &pkt);
+			ret = av_write_frame(oc, &pkt);
 		} else {
 			ret = 0;
 		}

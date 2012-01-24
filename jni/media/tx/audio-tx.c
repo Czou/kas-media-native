@@ -296,9 +296,9 @@ static int write_audio_frame(AVFormatContext *oc, AVStream *st, int16_t *samples
 	pkt.flags |= AV_PKT_FLAG_KEY;
 	pkt.stream_index= st->index;
 	pkt.data= audio_outbuf;
-	
+
 	/* write the compressed frame in the media file */
-	ret = av_interleaved_write_frame(oc, &pkt);
+	ret = av_write_frame(oc, &pkt);
 	if (ret != 0) {
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Error while writing audio frame");
 		return ret;
