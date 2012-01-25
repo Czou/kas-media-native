@@ -33,6 +33,7 @@
 
 #include "sdp-manager.h"
 
+#include <time.h>
 
 static char buf[256]; //Log
 static char* LOG_TAG = "NDK-video-rx";
@@ -41,6 +42,13 @@ static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static int receive = 0;
 static int sws_flags = SWS_BICUBIC;
 
+
+static int64_t
+timespecDiff(struct timespec *timeA_p, struct timespec *timeB_p)
+{
+	return ( ((timeA_p->tv_sec * 1000000000) + timeA_p->tv_nsec) -
+		((timeB_p->tv_sec * 1000000000) + timeB_p->tv_nsec) )/1000000;
+}
 
 
 jint
@@ -78,6 +86,11 @@ Java_com_kurento_kas_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 	int current_width, current_height;
 	
 	struct SwsContext *img_convert_ctx;
+
+	struct timespec start, end, t1, t2;
+	uint64_t time;
+	uint64_t total_time = 0;
+
 	
 	
 	pSdpString = (*env)->GetStringUTFChars(env, sdp_str, NULL);
@@ -176,9 +189,9 @@ Java_com_kurento_kas_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 	//Prepare Call to Method Java.
 	jclass cls = (*env)->GetObjectClass(env, videoPlayer);
 	
-	jmethodID midVideo = (*env)->GetMethodID(env, cls, "putVideoFrameRx", "([III)V");
+	jmethodID midVideo = (*env)->GetMethodID(env, cls, "putVideoFrameRx", "([IIII)V");
 	if (midVideo == 0) {
-		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "putVideoFrameRx([III)V no exist!");
+		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "putVideoFrameRx([IIII)V no exist!");
 		ret = -8;
 		goto end;
 	}
@@ -188,6 +201,9 @@ Java_com_kurento_kas_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 	current_width = -1;
 	current_height = -1;
 	buffer_nbytes = -1;
+
+i = 0;
+int n_packet = 0;
 
 	//READING THE DATA
 	for(;;) {
@@ -201,17 +217,22 @@ Java_com_kurento_kas_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 			avpkt_data_init = avpkt.data;
 			//Is this a avpkt from the video stream?
 			if (avpkt.stream_index == videoStream) {
-	/*
-	snprintf(buf, sizeof(buf), "avpkt->pts: %d", avpkt.pts);
-	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
-	snprintf(buf, sizeof(buf), "avpkt->dts: %d", avpkt.dts);
-	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
-	snprintf(buf, sizeof(buf), "avpkt->size: %d", avpkt.size);
-	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
-	*/
+snprintf(buf, sizeof(buf), "%d -------------------", n_packet++);
+__android_log_write(ANDROID_LOG_INFO, LOG_TAG, buf);
+snprintf(buf, sizeof(buf), "avpkt->pts: %lld", avpkt.pts);
+__android_log_write(ANDROID_LOG_INFO, LOG_TAG, buf);
+snprintf(buf, sizeof(buf), "avpkt->dts: %lld", avpkt.dts);
+__android_log_write(ANDROID_LOG_INFO, LOG_TAG, buf);
+snprintf(buf, sizeof(buf), "avpkt->size: %d", avpkt.size);
+__android_log_write(ANDROID_LOG_INFO, LOG_TAG, buf);
 				while (avpkt.size > 0) {
+clock_gettime(CLOCK_MONOTONIC, &start);
 					//Decode video frame
 					len = avcodec_decode_video2(pDecodecCtxVideo, pFrame, &got_picture, &avpkt);
+clock_gettime(CLOCK_MONOTONIC, &t2);
+time = timespecDiff(&t2, &start);
+snprintf(buf, sizeof(buf), "decode time: %llu ms", time);
+__android_log_write(ANDROID_LOG_INFO, LOG_TAG, buf);
 					if (len < 0) {
 						__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Error in video decoding.");
 						break;
@@ -229,14 +250,25 @@ Java_com_kurento_kas_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 							// Determine required picture size
 							picture_nbytes = avpicture_get_size(PIX_FMT_RGB32, current_width, current_height);
 							if (picture_nbytes > buffer_nbytes) {
+clock_gettime(CLOCK_MONOTONIC, &t1);
 								buffer = (uint8_t *) av_realloc(buffer, picture_nbytes * sizeof(uint8_t));
+clock_gettime(CLOCK_MONOTONIC, &t2);
+time = timespecDiff(&t2, &t1);
+snprintf(buf, sizeof(buf), "av_realloc size: %d time: %llu ms", picture_nbytes, time);
+__android_log_write(ANDROID_LOG_INFO, LOG_TAG, buf);
+
 								if (buffer == NULL) {
 									__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Error in alloc buffer.");
 									buffer_nbytes = -1;
 									break;
 								}
+clock_gettime(CLOCK_MONOTONIC, &t1);
 								(*env)->DeleteLocalRef(env, out_buffer_video);
 								out_buffer_video = (jintArray)(*env)->NewIntArray(env, picture_nbytes);
+clock_gettime(CLOCK_MONOTONIC, &t2);
+time = timespecDiff(&t2, &t1);
+snprintf(buf, sizeof(buf), "Only if needed NewIntArray size: %d time: %llu ms", picture_nbytes, time);
+__android_log_write(ANDROID_LOG_INFO, LOG_TAG, buf);
 								buffer_nbytes = picture_nbytes;
 							}
 							//Assign appropriate parts of buffer to image planes in pFrameRGB
@@ -258,19 +290,54 @@ Java_com_kurento_kas_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 								current_height, ((AVPicture*) pFrameRGB)->data,
 								((AVPicture*) pFrameRGB)->linesize);
 						sws_freeContext(img_convert_ctx);
-						(*env)->SetByteArrayRegion(env, out_buffer_video, 0, picture_nbytes, (jbyte*)pFrameRGB->data[0]);
-						(*env)->CallVoidMethod(env, videoPlayer, midVideo, out_buffer_video, current_width, current_height);
+/*clock_gettime(CLOCK_MONOTONIC, &t1);
+						//(*env)->DeleteLocalRef(env, out_buffer_video);
+						//out_buffer_video = (jintArray)(*env)->NewIntArray(env, buffer_nbytes);
+clock_gettime(CLOCK_MONOTONIC, &t2);
+time = timespecDiff(&t2, &t1);
+snprintf(buf, sizeof(buf), "NewIntArray size: %d time: %llu ms", buffer_nbytes, time);
+__android_log_write(ANDROID_LOG_INFO, LOG_TAG, buf);
+*/
+/*
+jint *carr;
+jint i, sum = 0;
+carr = (*env)->GetIntArrayElements(env, arr, NULL);
+*/
+
+
+
+clock_gettime(CLOCK_MONOTONIC, &t1);
+						(*env)->SetByteArrayRegion(env, out_buffer_video, 0, buffer_nbytes, (jbyte*)pFrameRGB->data[0]);
+clock_gettime(CLOCK_MONOTONIC, &t2);
+time = timespecDiff(&t2, &t1);
+snprintf(buf, sizeof(buf), "SetByteArrayRegion time: %llu ms", time);
+__android_log_write(ANDROID_LOG_INFO, LOG_TAG, buf);
+
+__android_log_write(ANDROID_LOG_INFO, LOG_TAG, "putVideoFrameRx");
+clock_gettime(CLOCK_MONOTONIC, &t1);
+						(*env)->CallVoidMethod(env, videoPlayer, midVideo, out_buffer_video, current_width, current_height, i);
+clock_gettime(CLOCK_MONOTONIC, &t2);
+time = timespecDiff(&t2, &t1);
+snprintf(buf, sizeof(buf), "putVideoFrameRx time: %llu ms", time);
+__android_log_write(ANDROID_LOG_INFO, LOG_TAG, buf);
 					}
 					pthread_mutex_unlock(&mutex);
 					
 					avpkt.size -= len;
 					avpkt.data += len;
+					i++;
+clock_gettime(CLOCK_MONOTONIC, &end);
+time = timespecDiff(&end, &start);
+total_time += time;
+snprintf(buf, sizeof(buf), "time: %llu ms; average: %llu ms", time, total_time/i);
+__android_log_write(ANDROID_LOG_INFO, LOG_TAG, buf);
 				}
 			}
 			//Free the packet that was allocated by av_read_frame
 			avpkt.data = avpkt_data_init;
 			av_free_packet(&avpkt);
 		}
+__android_log_write(ANDROID_LOG_INFO, LOG_TAG, "next");
 	}
 
 	ret = 0;
