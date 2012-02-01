@@ -71,6 +71,18 @@ static AVStream *video_st;
 
 static uint8_t *picture_buf;
 
+//static int i;
+
+/*
+static void close_video(AVFormatContext *oc, AVStream *st)
+{
+	if (st)
+		avcodec_close(st->codec);
+	av_free(picture);
+	av_free(tmp_picture);
+	av_free(video_outbuf);
+}
+*/
 
 ////////////////////////////////////////////////////////////////////////////////////////
 //INIT VIDEO
@@ -226,6 +238,7 @@ static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id, in
 	}
 
 
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "NEW COMPILATION armv7a ffmpeg n0.9.1");
 snprintf(buf, sizeof(buf), "bit_rate: %d", c->bit_rate);
 __android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 
@@ -278,6 +291,8 @@ Java_com_kurento_kas_media_tx_MediaTx_initVideo(JNIEnv* env,
 		goto end;
 	}
 #endif
+
+//	i = 0;
 
 	pOutFile = (*env)->GetStringUTFChars(env, outfile, NULL);
 	if (pOutFile == NULL) {
@@ -355,7 +370,8 @@ Java_com_kurento_kas_media_tx_MediaTx_initVideo(JNIEnv* env,
 	/* open the output file, if needed */
 	if (!(fmt->flags & AVFMT_NOFILE)) {
 		if ((ret = avio_open(&oc->pb, pOutFile, URL_WRONLY)) < 0) {
-			snprintf(buf, sizeof(buf), "Could not open '%s'", pOutFile);
+			av_strerror(ret, buf, sizeof(buf));
+			snprintf(buf, sizeof(buf), "Could not open '%s': %s", pOutFile, buf);
 			__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
 			goto end;
 		}
@@ -368,8 +384,8 @@ Java_com_kurento_kas_media_tx_MediaTx_initVideo(JNIEnv* env,
 	}
 	
 	urlContext = get_video_connection(0);
-	if ((ret=rtp_set_remote_url (urlContext, pOutFile)) < 0) {
-		snprintf(buf, sizeof(buf), "Could not open '%s' AVERROR_NOENT:%d", pOutFile, AVERROR_NOENT);
+	if ((ret = ff_rtp_set_remote_url (urlContext, pOutFile)) < 0) {
+		snprintf(buf, sizeof(buf), "Could not open '%s'", pOutFile);
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
 		goto end;
 	}
@@ -421,7 +437,8 @@ static int write_video_frame(AVFormatContext *oc, AVStream *st, int srcWidth, in
 	sws_scale(img_convert_ctx, (const uint8_t* const*)tmp_picture->data, tmp_picture->linesize,
 		0, c->height, picture->data, picture->linesize);
 	sws_freeContext(img_convert_ctx);
-	
+//snprintf(buf, sizeof(buf), "%d", __LINE__);
+//__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 	if (oc->oformat->flags & AVFMT_RAWPICTURE) {
 		/* raw video case. The API will change slightly in the near
 		futur for that */
@@ -434,7 +451,11 @@ static int write_video_frame(AVFormatContext *oc, AVStream *st, int srcWidth, in
 		ret = av_interleaved_write_frame(oc, &pkt);
 	} else {
 		/* encode the image */
+//snprintf(buf, sizeof(buf), "%d", __LINE__);
+//__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 		out_size = avcodec_encode_video(c, video_outbuf, video_outbuf_size, picture);
+//snprintf(buf, sizeof(buf), "%d", __LINE__);
+//__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 		/* if zero size, it means the image was buffered */
 		if (out_size > 0) {
 			AVPacket pkt;
@@ -448,7 +469,11 @@ static int write_video_frame(AVFormatContext *oc, AVStream *st, int srcWidth, in
 			pkt.size= out_size;
 		
 			/* write the compressed frame in the media file */
+//snprintf(buf, sizeof(buf), "%d oc: %p", __LINE__, oc);
+//__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 			ret = av_write_frame(oc, &pkt);
+//snprintf(buf, sizeof(buf), "%d", __LINE__);
+//__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 		} else {
 			ret = 0;
 		}
@@ -471,7 +496,35 @@ Java_com_kurento_kas_media_tx_MediaTx_putVideoFrame(JNIEnv* env,
 	int size;
 	
 	pthread_mutex_lock(&mutex);
+/*
+	if (++i >= 100) {
+		/* close codec */
+/*		if (video_st)
+			close_video(oc, video_st);
+		/* free the streams */
+/*		for(i = 0; i < oc->nb_streams; i++) {
+			av_freep(&oc->streams[i]->codec);
+			av_freep(&oc->streams[i]);
+		}
 
+		video_st = NULL;
+
+		video_st = add_video_stream(oc, CODEC_ID_MPEG4, 352, 288, 15, 1, 200000, 5);
+		if(!video_st) {
+			__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "video_st is NULL");
+		}
+
+		/* now that all the parameters are set, we can open the
+		video codec and allocate the necessary encode buffers */
+/*		if (video_st) {
+			if((ret = open_video(oc, video_st)) < 0) {
+				__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Could not open video");
+			}
+		}
+		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "bitrate set to 200 kbps");
+		i = 0;
+	}
+*/
 	if (!oc) {
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "No video initiated.");
 		ret = -1;

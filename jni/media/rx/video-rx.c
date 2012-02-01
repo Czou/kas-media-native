@@ -124,9 +124,8 @@ Java_com_kurento_kas_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 
 		// Open video file
 		if ( (ret = av_open_input_sdp(&pFormatCtx, pSdpString, ap)) != 0 ) {
-			snprintf(buf, sizeof(buf), "Couldn't process sdp: %d", ret);
-			__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
 			av_strerror(ret, buf, sizeof(buf));
+			snprintf(buf, sizeof(buf), "%s: Couldn't process sdp", buf);
 			__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
 			ret = -2;
 			goto end;
@@ -135,7 +134,7 @@ Java_com_kurento_kas_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 		// Retrieve stream information
 		if ( (ret = av_find_stream_info(pFormatCtx)) < 0) {
 			av_strerror(ret, buf, sizeof(buf));
-			snprintf(buf, sizeof(buf), "Couldn't find stream information: %s", buf);
+			snprintf(buf, sizeof(buf), "%s: Couldn't find stream information", buf);
 			__android_log_write(ANDROID_LOG_WARN, LOG_TAG, buf);
 			close_context(pFormatCtx);
 		} else
@@ -147,11 +146,16 @@ Java_com_kurento_kas_media_rx_MediaRx_startVideoRx(JNIEnv* env, jobject thiz,
 
 	// Find the first video stream
 	videoStream = -1;
-	for (i = 0; i < pFormatCtx->nb_streams; i++)
-		if (pFormatCtx->streams[i]->codec->codec_type == CODEC_TYPE_VIDEO) {
+snprintf(buf, sizeof(buf), "pFormatCtx->nb_streams: %d", pFormatCtx->nb_streams);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+	for (i = 0; i < pFormatCtx->nb_streams; i++) {
+snprintf(buf, sizeof(buf), "nb_stream: %d", i);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+		if (pFormatCtx->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
 			videoStream = i;
 			break;
 		}
+	}
 	if (videoStream == -1) {
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Didn't find a video stream");
 		ret = -4;

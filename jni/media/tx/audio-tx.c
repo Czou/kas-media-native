@@ -226,7 +226,8 @@ Java_com_kurento_kas_media_tx_MediaTx_initAudio (JNIEnv* env,
 	/* open the output file, if needed */
 	if (!(fmt->flags & AVFMT_NOFILE)) {
 		if ((ret = avio_open(&oc->pb, pOutFile, URL_WRONLY)) < 0) {
-			snprintf(buf, sizeof(buf), "Could not open '%s' AVERROR_NOENT:%d", pOutFile, AVERROR_NOENT);
+			av_strerror(ret, buf, sizeof(buf));
+			snprintf(buf, sizeof(buf), "Could not open '%s': %s", pOutFile, buf);
 			__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
 			goto end;
 		}
@@ -239,7 +240,7 @@ Java_com_kurento_kas_media_tx_MediaTx_initAudio (JNIEnv* env,
 	}
 	
 	urlContext = get_audio_connection(0);
-	if ((ret = rtp_set_remote_url (urlContext, pOutFile)) < 0) {
+	if ((ret = ff_rtp_set_remote_url (urlContext, pOutFile)) < 0) {
 		snprintf(buf, sizeof(buf), "Could not open '%s'", pOutFile);
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
 		goto end;

@@ -29,6 +29,11 @@
 
 #include "socket-manager.h"
 
+#include <android/log.h>
+
+static char buf[256]; //Log
+static char* LOG_TAG = "NDK-sdp-manager";
+
 //Based on libavformat/rtsp.c
 static int rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
 {
@@ -52,7 +57,7 @@ static int rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
 						rtsp_st->dynamic_protocol_context,
 						(RTPDynamicProtocolHandler*)rtsp_st->dynamic_handler);
 	else if (CONFIG_RTPDEC)
-		rtsp_st->transport_priv = rtp_parse_open(s, st, rtsp_st->rtp_handle,
+		rtsp_st->transport_priv = ff_rtp_parse_open(s, st, rtsp_st->rtp_handle,
 							rtsp_st->sdp_payload_type,
 			(rt->lower_transport == RTSP_LOWER_TRANSPORT_TCP || !s->max_delay)
 			? 0 : RTP_REORDER_QUEUE_DEFAULT_SIZE);
@@ -61,7 +66,7 @@ static int rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
 		return AVERROR(ENOMEM);
 	} else if (rt->transport != RTSP_TRANSPORT_RDT && CONFIG_RTPDEC) {
 		if (rtsp_st->dynamic_handler) {
-			rtp_parse_set_dynamic_protocol(rtsp_st->transport_priv,
+			ff_rtp_parse_set_dynamic_protocol(rtsp_st->transport_priv,
 							rtsp_st->dynamic_protocol_context,
 							rtsp_st->dynamic_handler);
 		}
@@ -90,6 +95,11 @@ static int my_sdp_read_header(AVFormatContext *s, AVFormatParameters *ap, const 
 	err = ff_sdp_parse(s, content);
 	if (err) goto fail;
 
+snprintf(buf, sizeof(buf), "content: %s", content);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+
+snprintf(buf, sizeof(buf), "rt->nb_rtsp_streams: %d", rt->nb_rtsp_streams);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 	/* open each RTP stream */
 	for (i = 0; i < rt->nb_rtsp_streams; i++) {
 		rtsp_st = rt->rtsp_streams[i];
@@ -101,8 +111,7 @@ static int my_sdp_read_header(AVFormatContext *s, AVFormatParameters *ap, const 
 		URLContext *urlContext = get_connection_by_local_port(rtsp_st->sdp_port);
 		if (urlContext)
 			rtsp_st->rtp_handle = urlContext;
-		else if (ffurl_open(&rtsp_st->rtp_handle, url, AVIO_RDWR) < 0) {
-			err = AVERROR_INVALIDDATA;
+		else if ( (err = ffurl_open(&rtsp_st->rtp_handle, url, AVIO_FLAG_READ, NULL, NULL)) < 0) {
  			goto fail;
 		}
 		if ((err = rtsp_open_transport_ctx(s, rtsp_st)))
@@ -147,6 +156,10 @@ static int my_av_open_input_stream(AVFormatContext **ic_ptr, const char *sdp_str
 			err = AVERROR(ENOMEM);
 			goto fail;
  		}
+ 		if (ic->iformat->priv_class) {
+			*(const AVClass**)ic->priv_data = ic->iformat->priv_class;
+			av_opt_set_defaults(ic->priv_data);
+		}
 	} else {
 		ic->priv_data = NULL;
 	}
@@ -155,11 +168,11 @@ static int my_av_open_input_stream(AVFormatContext **ic_ptr, const char *sdp_str
 	if (err < 0)
 		goto fail;
 
-    ic->raw_packet_buffer_remaining_size = RAW_PACKET_BUFFER_SIZE;
+	ic->raw_packet_buffer_remaining_size = RAW_PACKET_BUFFER_SIZE;
 
-    *ic_ptr = ic;
-    return 0;
-    
+	*ic_ptr = ic;
+	return 0;
+
 fail:
 	if (ic) {
 		int i;

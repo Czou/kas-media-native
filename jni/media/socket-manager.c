@@ -56,14 +56,17 @@ get_connection(int media_type, int port) {
 	AVFormatContext *s = NULL;
 
 	static char rtp[256];
+	int ret;
 
 	if (init_media() != 0) {
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Couldn't init media");
 		return NULL;
 	}
-
+snprintf(buf, sizeof(buf), "%d", __LINE__);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 	pthread_mutex_lock(&mutex);
-
+snprintf(buf, sizeof(buf), "%d", __LINE__);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 	if (!initiated) {
 		sem_init(&sem, 0, 0);
 		initiated = 1;
@@ -75,33 +78,41 @@ get_connection(int media_type, int port) {
 		pthread_mutex_lock(&mutex);
 		n_blocked--;
 	}
-
+snprintf(buf, sizeof(buf), "%d", __LINE__);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 	if (media_type == AUDIO)
 		s = pAudioFormatCtx;
 	else if (media_type == VIDEO)
 		s = pVideoFormatCtx;
-
+snprintf(buf, sizeof(buf), "%d", __LINE__);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 	if (!s) {
 		if (port != -1) {
 			snprintf(rtp, sizeof(rtp), "rtp://0.0.0.0:0?localport=%d", port);
 			__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, rtp);
 		} else {
-			snprintf(rtp, sizeof(rtp), "rtp://0.0.0.0:0");
+			snprintf(rtp, sizeof(rtp), "rtp://0.0.0.0:0"); // "rtp://193.147.51.21:56789");// "rtp://0.0.0.0:0");
 			__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, rtp);
 		}
+snprintf(buf, sizeof(buf), "%d", __LINE__);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 		s = avformat_alloc_context();
 		if (!s) {
 			__android_log_write(ANDROID_LOG_ERROR, LOG_TAG,
 					"Memory error: Could not alloc context");
 			s = NULL;
-		} else if (avio_open(&s->pb, rtp, AVIO_RDWR) < 0) {
-			__android_log_write(ANDROID_LOG_ERROR, LOG_TAG,
-					"Could not open 'rtp://0.0.0.0:0'");
+		} else if ( (ret = avio_open(&s->pb, rtp, AVIO_FLAG_WRITE)) < 0) {
+			av_strerror(ret, buf, sizeof(buf));
+			snprintf(buf, sizeof(buf), "%s: Could not open '%s'", buf, rtp);
+			__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
 			av_free(s);
 			s = NULL;
 		}
+snprintf(buf, sizeof(buf), "%d", __LINE__);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 	}
-
+snprintf(buf, sizeof(buf), "%d", __LINE__);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 	if (s && s->pb) {
 		urlContext = s->pb->opaque;
 		if (media_type == AUDIO) {
@@ -111,6 +122,8 @@ get_connection(int media_type, int port) {
 			pVideoFormatCtx = s;
 			nVideo++;
 		}
+snprintf(buf, sizeof(buf), "%d", __LINE__);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 	}
 
 	pthread_mutex_unlock(&mutex);
@@ -165,31 +178,46 @@ void close_context(AVFormatContext *s) {
 	RTSPState *rt;
 	RTSPStream *rtsp_st;
 	int i;
-
+snprintf(buf, sizeof(buf), "%d", __LINE__);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 	if (!s)
 		return;
-
+snprintf(buf, sizeof(buf), "%d", __LINE__);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 	//if is output
 	if (s->oformat && s->pb) {
 		__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "free output");
 		free_connection(s->pb->opaque);
 		s->pb->opaque = NULL;
+snprintf(buf, sizeof(buf), "%d", __LINE__);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 		if (!(s->oformat->flags & AVFMT_NOFILE)) {
 			avio_close(s->pb);
 		}
+snprintf(buf, sizeof(buf), "%d", __LINE__);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 		av_free(s);
 	}
-
+snprintf(buf, sizeof(buf), "%d", __LINE__);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 	//if is input
 	if (s->iformat && s->priv_data) {
 		rt = s->priv_data;
+snprintf(buf, sizeof(buf), "%d", __LINE__);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 		for (i = 0; i < rt->nb_rtsp_streams; i++) {
+snprintf(buf, sizeof(buf), "%d", __LINE__);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 			rtsp_st = rt->rtsp_streams[i];
 			__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "free input");
 			free_connection(rtsp_st->rtp_handle);
 			rtsp_st->rtp_handle = NULL;
 		}
+snprintf(buf, sizeof(buf), "%d", __LINE__);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 		av_close_input_file(s);
+snprintf(buf, sizeof(buf), "%d", __LINE__);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);	
 	}
 }
 
@@ -199,11 +227,11 @@ get_connection_by_local_port(int local_port) {
 
 	pthread_mutex_lock(&mutex);
 
-	if (pVideoFormatCtx && (rtp_get_local_rtp_port(pVideoFormatCtx->pb->opaque)
+	if (pVideoFormatCtx && (ff_rtp_get_local_rtp_port(pVideoFormatCtx->pb->opaque)
 			== local_port)) {
 		urlContext = pVideoFormatCtx->pb->opaque;
 		nVideo++;
-	} else if (pAudioFormatCtx && (rtp_get_local_rtp_port(
+	} else if (pAudioFormatCtx && (ff_rtp_get_local_rtp_port(
 			pAudioFormatCtx->pb->opaque) == local_port)) {
 		urlContext = pAudioFormatCtx->pb->opaque;
 		nAudio++;
@@ -225,7 +253,12 @@ jint Java_com_kurento_kas_media_ports_MediaPortManager_takeAudioLocalPort(
 	snprintf(buf, sizeof(buf), "takeAudioLocalPort Port: %d", audioPort);
 	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 	URLContext *urlContext = get_audio_connection(audioPort);
-	return rtp_get_local_rtp_port(urlContext);
+snprintf(buf, sizeof(buf), "%d", __LINE__);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+snprintf(buf, sizeof(buf), "urlContext: %p", urlContext);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+	//TODO: if urlContext==NULL throw Java Exception.
+	return ff_rtp_get_local_rtp_port(urlContext);
 }
 
 jint Java_com_kurento_kas_media_ports_MediaPortManager_releaseAudioLocalPort(
@@ -255,7 +288,7 @@ jint Java_com_kurento_kas_media_ports_MediaPortManager_takeVideoLocalPort(
 	snprintf(buf, sizeof(buf), "takeVideoLocalPort Port: %d", videoPort);
 	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 	URLContext *urlContext = get_video_connection(videoPort);
-	return rtp_get_local_rtp_port(urlContext);
+	return ff_rtp_get_local_rtp_port(urlContext);
 }
 
 jint Java_com_kurento_kas_media_ports_MediaPortManager_releaseVideoLocalPort(

@@ -99,6 +99,7 @@ init_media()
 	if(!initialized) {
 		av_log_set_callback(android_av_log);
 		av_register_all();
+		avformat_network_init();
 		ret = av_lockmgr_register(lockmgr);
 		initialized++;
 	}

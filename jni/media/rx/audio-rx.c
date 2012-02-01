@@ -126,7 +126,7 @@ Java_com_kurento_kas_media_rx_MediaRx_startAudioRx(JNIEnv* env, jobject thiz,
 	// Find the first audio stream
 	audioStream = -1;
 	for (i = 0; i < pFormatCtx->nb_streams; i++) {
-		if (pFormatCtx->streams[i]->codec->codec_type == CODEC_TYPE_AUDIO) {
+		if (pFormatCtx->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
 			audioStream = i;
 			break;
 		}
