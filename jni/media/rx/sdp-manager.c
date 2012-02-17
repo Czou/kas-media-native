@@ -23,6 +23,9 @@
 
 #include "sdp-manager.h"
 #include "libavformat/rtsp.h"
+#include "libavformat/rtpenc_chain.h"
+#include "libavformat/internal.h"
+#include "libavformat/rdt.h"
 
 #include "socket-manager.h"
 
@@ -47,7 +50,7 @@ static int rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
 	} else if (rt->transport == RTSP_TRANSPORT_RDT && CONFIG_RTPDEC)
 		rtsp_st->transport_priv = ff_rdt_parse_open(s, st->index,
 						rtsp_st->dynamic_protocol_context,
-						rtsp_st->dynamic_handler);
+						(RTPDynamicProtocolHandler*)rtsp_st->dynamic_handler);
 	else if (CONFIG_RTPDEC)
 		rtsp_st->transport_priv = rtp_parse_open(s, st, rtsp_st->rtp_handle,
 							rtsp_st->sdp_payload_type,
@@ -79,7 +82,7 @@ static int my_sdp_read_header(AVFormatContext *s, AVFormatParameters *ap, const 
 	if (!ff_network_init())
 		return AVERROR(EIO);
 	
-	content = sdp_str;
+	content = (char*)sdp_str;
 	size = strlen(sdp_str);
 	if (size <= 0)
 		return AVERROR_INVALIDDATA;
@@ -98,10 +101,8 @@ static int my_sdp_read_header(AVFormatContext *s, AVFormatParameters *ap, const 
 		URLContext *urlContext = get_connection_by_local_port(rtsp_st->sdp_port);
 		if (urlContext)
 			rtsp_st->rtp_handle = urlContext;
-		else if (ffurl_open(&rtsp_st->rtp_handle, url, AVIO_RDWR) < 0) {
-			err = AVERROR_INVALIDDATA;
+		else if ( (err = ffurl_open(&rtsp_st->rtp_handle, url, AVIO_RDWR)) < 0)
  			goto fail;
-		}
 		if ((err = rtsp_open_transport_ctx(s, rtsp_st)))
 			goto fail;
 	}
@@ -152,10 +153,6 @@ static int my_av_open_input_stream(AVFormatContext **ic_ptr, const char *sdp_str
 	if (err < 0)
 		goto fail;
 
-#if FF_API_OLD_METADATA
-    ff_metadata_demux_compat(ic);
-#endif
-
     ic->raw_packet_buffer_remaining_size = RAW_PACKET_BUFFER_SIZE;
 
     *ic_ptr = ic;
@@ -186,7 +183,6 @@ int av_open_input_sdp(AVFormatContext **ic_ptr, const char *sdp_str, AVFormatPar
 {
 	int err;
 	AVInputFormat *fmt = NULL;
-	void *logctx= ap && ap->prealloced_context ? *ic_ptr : NULL;
 	
 	fmt = av_find_input_format("sdp");
 	

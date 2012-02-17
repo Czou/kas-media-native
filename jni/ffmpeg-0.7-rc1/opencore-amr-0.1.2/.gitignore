@@ -1,8 +1,0 @@
-Makefile
-config.log
-config.status
-libtool
-test/amrnb-dec
-test/amrnb-enc
-test/amrwb-dec
-test/linkboth

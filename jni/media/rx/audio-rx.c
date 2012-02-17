@@ -22,6 +22,7 @@
  */
 
 #include <init-media.h>
+#include <socket-manager.h>
 
 #include <jni.h>
 #include <pthread.h>
@@ -55,24 +56,25 @@ Java_com_kurento_kas_media_rx_MediaRx_stopAudioRx(JNIEnv* env,
 
 jint
 Java_com_kurento_kas_media_rx_MediaRx_startAudioRx(JNIEnv* env, jobject thiz,
-				jstring sdp_str, jobject audioPlayer)
+				jstring sdp, jint maxDelay, jobject audioReceiver)
 {
 	
 	const char *pSdpString = NULL;
 
 	AVFormatContext *pFormatCtx = NULL;
+	AVFormatParameters params, *ap = &params;
 	AVCodecContext *pDecodecCtxAudio = NULL;
 	AVCodec *pDecodecAudio = NULL;
 	
 	AVPacket avpkt;
 	uint8_t *avpkt_data_init;
 	
-	jintArray out_buffer_audio;
+	jintArray out_buffer_audio = NULL;
 	uint8_t outbuf[DATA_SIZE];
 
 	int i, ret, audioStream, out_size, len;
 
-	pSdpString = (*env)->GetStringUTFChars(env, sdp_str, NULL);
+	pSdpString = (*env)->GetStringUTFChars(env, sdp, NULL);
 	if (pSdpString == NULL) {
 		ret = -1; // OutOfMemoryError already thrown
 		goto end;
@@ -97,11 +99,14 @@ Java_com_kurento_kas_media_rx_MediaRx_startAudioRx(JNIEnv* env, jobject thiz,
 		}
 		pthread_mutex_unlock(&mutex);
 
+		pFormatCtx = avformat_alloc_context();
+		pFormatCtx->max_delay = maxDelay * 1000;
+		ap->prealloced_context = 1;
+
 		// Open audio file
-		if ( (ret = av_open_input_sdp(&pFormatCtx, pSdpString, NULL)) != 0 ) {
-			snprintf(buf, sizeof(buf), "Couldn't process sdp: %d", ret);
-			__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
+		if ( (ret = av_open_input_sdp(&pFormatCtx, pSdpString, ap)) != 0 ) {
 			av_strerror(ret, buf, sizeof(buf));
+			snprintf(buf, sizeof(buf), "%s: Couldn't process sdp.", buf);
 			__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, buf);
 			ret = -2;
 			goto end;
@@ -110,7 +115,7 @@ Java_com_kurento_kas_media_rx_MediaRx_startAudioRx(JNIEnv* env, jobject thiz,
 		// Retrieve stream information
 		if ( (ret = av_find_stream_info(pFormatCtx)) < 0) {
 			av_strerror(ret, buf, sizeof(buf));
-			snprintf(buf, sizeof(buf), "Couldn't find stream information: %s", buf);
+			snprintf(buf, sizeof(buf), "%s: Couldn't find stream information.", buf);
 			__android_log_write(ANDROID_LOG_WARN, LOG_TAG, buf);
 			close_context(pFormatCtx);
 		} else
@@ -149,8 +154,10 @@ Java_com_kurento_kas_media_rx_MediaRx_startAudioRx(JNIEnv* env, jobject thiz,
 		goto end;
 	}
 	
-snprintf(buf, sizeof(buf), "pDecodecAudio->name: %s", pDecodecAudio->name);
-__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+	snprintf(buf, sizeof(buf), "max_delay: %d ms", pFormatCtx->max_delay/1000);
+	__android_log_write(ANDROID_LOG_INFO, LOG_TAG, buf);
+	snprintf(buf, sizeof(buf), "codec: %s", pDecodecAudio->name);
+	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 	
 	
 	// Open audio codec
@@ -158,31 +165,27 @@ __android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 		ret = -6; // Could not open codec
 		goto end;
 	}
-	
-snprintf(
-	buf,
-	sizeof(buf),
-	"c->sample_rate: %d; c->Frame Size: %d; c->bit_rate: %d; c->FMT: %d; FMT S16 : %d ",
-	pDecodecCtxAudio->sample_rate, pDecodecCtxAudio->frame_size,
-	pDecodecCtxAudio->bit_rate, pDecodecCtxAudio->sample_fmt,
-	SAMPLE_FMT_S16);
-__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+
+	snprintf(buf, sizeof(buf), "Sample Rate: %d; Frame Size: %d; Bit Rate: %d",
+		pDecodecCtxAudio->sample_rate, pDecodecCtxAudio->frame_size,
+		pDecodecCtxAudio->bit_rate);
+	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 	
 	
 	
 	//Prepare Call to Method Java.
-	jclass cls = (*env)->GetObjectClass(env, audioPlayer);
+	jclass cls = (*env)->GetObjectClass(env, audioReceiver);
 	
-	jmethodID midAudio = (*env)->GetMethodID(env, cls, "putAudioSamplesRx", "([BI)V");
+	jmethodID midAudio = (*env)->GetMethodID(env, cls, "putAudioSamplesRx", "([BII)V");
 	if (midAudio == 0) {
-		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "putAudioSamplesRx([BI)V no exist!");
+		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "putAudioSamplesRx([BII)V no exist!");
 		ret = -7;
 		goto end;
 	}
-	
-	//Definir el tamaño de out_buffer
-	out_buffer_audio = (jbyteArray)(*env)->NewByteArray(env, DATA_SIZE);
-	
+
+i = 0;
+int n_packet = 0;
+
 	//READING THE DATA
 	for(;;) {
 		pthread_mutex_lock(&mutex);
@@ -196,14 +199,19 @@ __android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 			avpkt_data_init = avpkt.data;
 			//Is this a avpkt from the audio stream?
 			if (avpkt.stream_index == audioStream) {
-	/*
-	snprintf(buf, sizeof(buf), "avpkt->pts: %d", avpkt.pts);
-	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
-	snprintf(buf, sizeof(buf), "avpkt->dts: %d", avpkt.dts);
-	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
-	snprintf(buf, sizeof(buf), "avpkt->size: %d", avpkt.size);
-	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
-	*/
+snprintf(buf, sizeof(buf), "%d -------------------", n_packet++);
+__android_log_write(ANDROID_LOG_INFO, LOG_TAG, buf);
+snprintf(buf, sizeof(buf), "avpkt->pts: %lld", avpkt.pts);
+__android_log_write(ANDROID_LOG_INFO, LOG_TAG, buf);
+snprintf(buf, sizeof(buf), "avpkt->dts: %lld", avpkt.dts);
+__android_log_write(ANDROID_LOG_INFO, LOG_TAG, buf);
+snprintf(buf, sizeof(buf), "avpkt->size: %d", avpkt.size);
+__android_log_write(ANDROID_LOG_INFO, LOG_TAG, buf);
+snprintf(buf, sizeof(buf), "dts/size: %lld", avpkt.dts / avpkt.size);
+__android_log_write(ANDROID_LOG_INFO, LOG_TAG, buf);
+snprintf(buf, sizeof(buf), "time: %lld s", avpkt.dts / pDecodecCtxAudio->sample_rate);
+__android_log_write(ANDROID_LOG_INFO, LOG_TAG, buf);
+
 				while (avpkt.size > 0) {
 					//Decode audio frame
 					out_size = DATA_SIZE;
@@ -219,25 +227,31 @@ __android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 						break;
 					}
 					if (out_size > 0) {
+						(*env)->DeleteLocalRef(env, out_buffer_audio);
+						out_buffer_audio = (jbyteArray)(*env)->NewByteArray(env, out_size);
 						(*env)->SetByteArrayRegion(env, out_buffer_audio, 0, out_size, (jbyte *) outbuf);
-						(*env)->CallVoidMethod(env, audioPlayer, midAudio, out_buffer_audio, out_size);
+__android_log_write(ANDROID_LOG_INFO, LOG_TAG, "putAudioSamplesRx");
+						(*env)->CallVoidMethod(env, audioReceiver, midAudio, out_buffer_audio, out_size, i);
 					}
 					pthread_mutex_unlock(&mutex);
 					
 					avpkt.size -= len;
 					avpkt.data += len;
+					i++;
 				}
 			}
 			//Free the packet that was allocated by av_read_frame
 			avpkt.data = avpkt_data_init;
 			av_free_packet(&avpkt);
 		}
+__android_log_write(ANDROID_LOG_INFO, LOG_TAG, "next");
 	}
 
 	ret = 0;
 
 end:
-	(*env)->ReleaseStringUTFChars(env, sdp_str, pSdpString);
+	(*env)->ReleaseStringUTFChars(env, sdp, pSdpString);
+	(*env)->DeleteLocalRef(env, out_buffer_audio);
 	
 	//Close the codec
 	if (pDecodecCtxAudio)

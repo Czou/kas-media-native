@@ -32,8 +32,9 @@
 #include "libavformat/avformat.h"
 #include "libswscale/swscale.h"
 #include "libavcodec/opt.h"
-
 #include "libavformat/rtpenc.h"
+#include "libavformat/rtpdec.h"
+#include "libavformat/url.h"
 
 
 /*
@@ -48,8 +49,8 @@ static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 //static int sws_flags = SWS_BICUBIC;
 
 //Coupled with Java
-int AUDIO_CODECS[] = {CODEC_ID_AMR_NB, CODEC_ID_MP2, CODEC_ID_AAC};
-char* AUDIO_CODEC_NAMES[] = {"amr_nb", "mp2", "aac"};
+int AUDIO_CODECS[] = {CODEC_ID_AMR_NB, CODEC_ID_MP2, CODEC_ID_AAC, CODEC_ID_PCM_MULAW, CODEC_ID_PCM_ALAW};
+char* AUDIO_CODEC_NAMES[] = {"amr_nb", "mp2", "aac", "pcm_mulaw", "pcm_alaw"};
 
 static uint8_t *audio_outbuf;
 static int audio_outbuf_size;
@@ -57,6 +58,11 @@ static int audio_outbuf_size;
 static AVOutputFormat *fmt;
 static AVFormatContext *oc;
 static AVStream *audio_st;
+
+static int frame_size;
+enum {
+	DEFAULT_FRAME_SIZE = 20, //milliseconds
+};
 
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -132,15 +138,14 @@ Java_com_kurento_kas_media_tx_MediaTx_initAudio (JNIEnv* env,
 						jobject thiz,
 						jstring outfile, jint codec_id, jint sample_rate, jint bit_rate, jint payload_type)
 {
-	int i, ret;
+	int ret;
 	
 	const char *pOutFile = NULL;
 	URLContext *urlContext;
 	
 	
 	pthread_mutex_lock(&mutex);
-	__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, "Entro en initAudio");	
-	
+
 	pOutFile = (*env)->GetStringUTFChars(env, outfile, NULL);
 	if (pOutFile == NULL) {
     		ret = -1; // OutOfMemoryError already thrown
@@ -156,7 +161,7 @@ Java_com_kurento_kas_media_tx_MediaTx_initAudio (JNIEnv* env,
 	}
 	avformat_opts = avformat_alloc_context();
 	sws_opts = sws_getContext(16,16,0, 16,16,0, sws_flags, NULL,NULL,NULL);
-+/	
+*/
 	/* auto detect the output format from the name. default is mp4. */
 	fmt = av_guess_format(NULL, pOutFile, NULL);
 	if (!fmt) {
@@ -240,18 +245,29 @@ Java_com_kurento_kas_media_tx_MediaTx_initAudio (JNIEnv* env,
 	}
 	
 	oc->pb->opaque = urlContext;
-	
-	
+
 	/* write the stream header, if any */
 	av_write_header(oc);
 
 	RTPMuxContext *rptmc = oc->priv_data;
 	rptmc->payload_type = payload_type;
+	rptmc->max_frames_per_packet = 1;
+
+	snprintf(buf, sizeof(buf), "Frames per packet: %d", rptmc->max_frames_per_packet);
+	__android_log_write(ANDROID_LOG_INFO, LOG_TAG, buf);
 
 	(*env)->ReleaseStringUTFChars(env, outfile, pOutFile);
 	
-	ret = audio_st->codec->frame_size;
+	if(audio_st->codec->frame_size > 1)
+		frame_size = audio_st->codec->frame_size;
+	else
+		frame_size = sample_rate * DEFAULT_FRAME_SIZE / 1000;
+
+	ret = frame_size;
 	
+	snprintf(buf, sizeof(buf), "Audio frame size: %d", frame_size);
+	__android_log_write(ANDROID_LOG_INFO, LOG_TAG, buf);
+
 end:
 	pthread_mutex_unlock(&mutex);
 	return ret;
@@ -272,16 +288,16 @@ static int write_audio_frame(AVFormatContext *oc, AVStream *st, int16_t *samples
 
 	c = st->codec;
 	
-	pkt.size= avcodec_encode_audio(c, audio_outbuf, audio_outbuf_size, samples);
+	pkt.size= avcodec_encode_audio(c, audio_outbuf, frame_size, samples);
 	
 	if (c->coded_frame && c->coded_frame->pts != AV_NOPTS_VALUE)
 		pkt.pts= av_rescale_q(c->coded_frame->pts, c->time_base, st->time_base);
 	pkt.flags |= AV_PKT_FLAG_KEY;
 	pkt.stream_index= st->index;
 	pkt.data= audio_outbuf;
-	
+
 	/* write the compressed frame in the media file */
-	ret = av_interleaved_write_frame(oc, &pkt);
+	ret = av_write_frame(oc, &pkt);
 	if (ret != 0) {
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Error while writing audio frame");
 		return ret;
@@ -296,7 +312,7 @@ Java_com_kurento_kas_media_tx_MediaTx_putAudioSamples (JNIEnv* env,
 						jshortArray in_buffer, jint in_size)
 {
 	int16_t *samples;
-	int i, ret, nframes, frame_size;
+	int i, ret, nframes;
 	
 	//FIXME: controlar el tamaño del array pasado y levantar un error si no es correcto.
 	pthread_mutex_lock(&mutex);
@@ -312,11 +328,8 @@ Java_com_kurento_kas_media_tx_MediaTx_putAudioSamples (JNIEnv* env,
     		ret = -2;
 		goto end;
     	}
-	
-	frame_size = audio_st->codec->frame_size;
+
 	nframes = in_size / frame_size;
-
-
 	for (i=0; i<nframes; i++) {
 		if( (ret=write_audio_frame(oc, audio_st, &samples[i*frame_size])) < 0) {
 			(*env)->ReleaseShortArrayElements(env, in_buffer, samples, 0);

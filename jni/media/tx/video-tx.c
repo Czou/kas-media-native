@@ -23,6 +23,7 @@
 
 #include <my-cmdutils.h>
 #include <init-media.h>
+#include <socket-manager.h>
 
 #include <jni.h>
 #include <pthread.h>
@@ -32,6 +33,8 @@
 #include "libswscale/swscale.h"
 #include "libavcodec/opt.h"
 #include "libavformat/rtpenc.h"
+#include "libavformat/rtpdec.h"
+#include "libavformat/url.h"
 
 /*
 	see	libavformat/output-example.c
@@ -147,7 +150,7 @@ static int open_video(AVFormatContext *oc, AVStream *st)
  * see new_video_stream in ffmpeg.c
  */
 static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id, int width, int height,
-				int frame_rate_num, int frame_rate_den, int bit_rate, int gop_size, int qmax)
+				int frame_rate_num, int frame_rate_den, int bit_rate, int gop_size)
 {
 	AVCodecContext *c;
 	AVStream *st;
@@ -164,8 +167,10 @@ static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id, in
 	
 	/* put sample parameters */
 	c->bit_rate = bit_rate;
-	c->rc_max_rate = bit_rate;
-	c->rc_min_rate = bit_rate;
+	//c->rc_max_rate = bit_rate;
+	//c->rc_min_rate = bit_rate;
+	c->qcompress = 0.0;
+	c->qblur = 0.0;
 	
 	/* resolution must be a multiple of two */
 	c->width = width;
@@ -179,10 +184,10 @@ static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id, in
 	c->gop_size = gop_size;
 	c->keyint_min = gop_size;
 	c->max_b_frames = 0;
-	c->qmax = qmax;
+	//c->qmax = qmax;
 	c->pix_fmt = PIX_FMT_YUV420P;
 
-	c->rc_buffer_size = INT_MAX;	//((c->bit_rate * (int64_t)c->time_base.num) / (int64_t)c->time_base.den) + 1;
+	//c->rc_buffer_size = INT_MAX;	//((c->bit_rate * (int64_t)c->time_base.num) / (int64_t)c->time_base.den) + 1;
 
 
 
@@ -212,7 +217,12 @@ static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id, in
 		c->trellis = 0; // trellis=0
 		c->flags &= ~CODEC_FLAG_INTERLACED_DCT & ~CODEC_FLAG_LOOP_FILTER; // flags=-ildct-loop
 		c->flags2 &= ~CODEC_FLAG2_8X8DCT & ~CODEC_FLAG2_MBTREE & ~CODEC_FLAG2_MIXED_REFS & ~CODEC_FLAG2_WPRED; // flags2=-dct8x8-mbtree-mixed_refs-wpred
-		c->qcompress = 0.6;
+		//c->qcompress = 0.6;
+
+		//Ensure no default settings
+		c->qmin = 1;
+		c->qmax = 32;
+		c->max_qdiff = 4;
 	}
 
 
@@ -230,9 +240,12 @@ snprintf(buf, sizeof(buf), "qmin: %d", c->qmin);
 __android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 snprintf(buf, sizeof(buf), "qmax: %d", c->qmax);
 __android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
-snprintf(buf, sizeof(buf), "qcompress: %d", c->qcompress);
+snprintf(buf, sizeof(buf), "qcompress: %f", c->qcompress);
 __android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
-
+snprintf(buf, sizeof(buf), "qblur: %f", c->qblur);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
+snprintf(buf, sizeof(buf), "max_qdiff: %d", c->max_qdiff);
+__android_log_write(ANDROID_LOG_DEBUG, LOG_TAG, buf);
 
 
 	
@@ -247,9 +260,9 @@ jint
 Java_com_kurento_kas_media_tx_MediaTx_initVideo(JNIEnv* env,
 			jobject thiz,
 			jstring outfile, jint width, jint height, jint frame_rate_num, jint frame_rate_den,
-			jint bit_rate, jint gop_size, jint qmax, jint codecId, jint payload_type)
+			jint bit_rate, jint gop_size, jint codecId, jint payload_type)
 {
-	int i, ret;
+	int ret;
 	
 	const char *pOutFile = NULL;
 	URLContext *urlContext;
@@ -282,7 +295,7 @@ Java_com_kurento_kas_media_tx_MediaTx_initVideo(JNIEnv* env,
 	}
 	avformat_opts = avformat_alloc_context();
 	sws_opts = sws_getContext(16,16,0, 16,16,0, sws_flags, NULL,NULL,NULL);a
-+/	
+*/
 	/* auto detect the output format from the name. default is mp4. */
 	fmt = av_guess_format(NULL, pOutFile, NULL);
 	if (!fmt) {
@@ -311,7 +324,7 @@ Java_com_kurento_kas_media_tx_MediaTx_initVideo(JNIEnv* env,
 	video_st = NULL;
 	
 	if (fmt->video_codec != CODEC_ID_NONE) {
-		video_st = add_video_stream(oc, fmt->video_codec, width, height, frame_rate_num, frame_rate_den, bit_rate, gop_size, qmax);
+		video_st = add_video_stream(oc, fmt->video_codec, width, height, frame_rate_num, frame_rate_den, bit_rate, gop_size);
 		if(!video_st) {
 			ret = -3;
 			goto end;
@@ -405,7 +418,7 @@ static int write_video_frame(AVFormatContext *oc, AVStream *st, int srcWidth, in
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Cannot initialize the conversion context");
 		return -1;
 	}
-	sws_scale(img_convert_ctx, tmp_picture->data, tmp_picture->linesize,
+	sws_scale(img_convert_ctx, (const uint8_t* const*)tmp_picture->data, tmp_picture->linesize,
 		0, c->height, picture->data, picture->linesize);
 	sws_freeContext(img_convert_ctx);
 	
@@ -435,16 +448,16 @@ static int write_video_frame(AVFormatContext *oc, AVStream *st, int srcWidth, in
 			pkt.size= out_size;
 		
 			/* write the compressed frame in the media file */
-			ret = av_interleaved_write_frame(oc, &pkt);
+			ret = av_write_frame(oc, &pkt);
 		} else {
 			ret = 0;
 		}
 	}
 
-	if (ret != 0) {
+	if (ret < 0)
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Error while writing video frame");
-		return ret;
-	}
+
+	return ret;
 }
 
 jint
@@ -478,13 +491,13 @@ Java_com_kurento_kas_media_tx_MediaTx_putVideoFrame(JNIEnv* env,
 		
 	
 	if (write_video_frame(oc, video_st,  width, height) < 0) {
-		(*env)->ReleaseByteArrayElements(env, frame, picture_buf, 0);
+		(*env)->ReleaseByteArrayElements(env, frame, (jbyte*)picture_buf, 0);
 		__android_log_write(ANDROID_LOG_ERROR, LOG_TAG, "Could not write video frame");
 		ret = -2;
 		goto end;
 	}
 
-	(*env)->ReleaseByteArrayElements(env, frame, picture_buf, 0);
+	(*env)->ReleaseByteArrayElements(env, frame, (jbyte*)picture_buf, 0);
 	av_free(picture2_buf);
 	ret = 0;
 	
