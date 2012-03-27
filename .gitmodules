@@ -7,3 +7,6 @@
 [submodule "jni/external/opencore-amr"]
 	path = jni/external/opencore-amr
 	url = ssh://git@repository.kurento.com/external/opencore-amr.git
+[submodule "kc-media-native"]
+	path = kc-media-native
+	url = ssh://git@repository.kurento.com/kc/kc-media-native
